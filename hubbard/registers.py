@@ -2,7 +2,7 @@ from qiskit import QuantumRegister
 from copy import deepcopy
 
 EVEN_SITE_LIST = ['u', 'd', 'w', 's', 'e', 'n']
-ODD_SITE_LIST = ['d', 'u', 'w', 's', 'e', 'n']
+ODD_SITE_LIST = ['d', 'u', 's', 'w', 'n', 'e']
 
 class SiteRegister():
     """
@@ -25,7 +25,7 @@ class SiteRegister():
         self.name = name
         self.is_even = (xpos+ypos)%2 == 0
         self._keys = str_list
-        self.map = zip(self._keys, range(len(str_list)) )
+        self.map = dict(zip(self._keys, range(len(str_list)) ))
 
         self._qregister = QuantumRegister(len(str_list), name)
 

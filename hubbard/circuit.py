@@ -10,7 +10,7 @@ def hubbard_circuit(shape, ancilla_register, classical_registers):
     ----------
     shape : tuple
         Shape of the 2d Hubbard system
-    ancilla_register : QuantumRegister
+    ancilla_register : AncillaRegister
         Quantum register defining the ancilla qubits
     classical_registers : ClassicalRegister
         Classical register for the measurements
