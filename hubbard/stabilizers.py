@@ -67,7 +67,7 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx):
 
     # Measure ancilla on x, i.e. hadamard+measure on z
     qc.h(ancilla)
-    qc.measure(ancilla, cl_reg)
+    qc.measure(ancilla, cl_reg[0])
 
     # Apply a controlled z operation
     qc.z(regs[involved_regs['br']]['n']).c_if(cl_reg, 1)
