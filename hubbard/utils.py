@@ -9,11 +9,15 @@ def lattice_str(dense_state, regs, shape):
     ----------
     dense_state: array_like
         Dense representation of a quantum state
-    regs: SiteRegisters
+    regs: dict
+        Dictionary of sites register
+    shape: tuple
+        Shape of the hubbard lattice
 
     Returns
     -------
-    None: None
+    str
+        String representing the lattice state, that can be printed or saved on file
     """
     NN = int(np.log2(len(dense_state)))
 
@@ -48,6 +52,24 @@ def lattice_str(dense_state, regs, shape):
     return lattice_string
 
 def lattice_state(str_state, regs, shape):
+    """
+    Starting from a string state, i.e. '0000' return
+    the state distributed in the lattice
+
+    Parameters
+    ----------
+    str_state : str
+        State in qiskit format
+    regs : dict
+        dictionary of SiteRegisters
+    shape : tuple
+        Shape of the Hubbard lattice
+
+    Returns
+    -------
+    list
+        List of lattice string. Each list correspond to a y value
+    """
     str_state = str_state[::-1]
     sites = [[] for _ in range(shape[1])]
 
@@ -81,6 +103,29 @@ def lattice_state(str_state, regs, shape):
 
 
 def site_str(up, down, north=None, south=None, west=None, east=None):
+    """
+    Write the site in lattice form
+
+    Parameters
+    ----------
+    up : int
+        Up qubit
+    down : int
+        down qubit
+    north : int, optional
+        North rishon, by default None
+    south : int, optional
+        South rishon, by default None
+    west : int, optional
+        West rishon, by default None
+    east : int, optional
+        East rishon, by default None
+
+    Returns
+    -------
+    dict
+        dictionary with the site description
+    """
     site_repr = {}
     if west is None and east is None:
         east_len = 3
@@ -114,6 +159,23 @@ def site_str(up, down, north=None, south=None, west=None, east=None):
     return site_repr
 
 def stack_horizontally(site_str0, site_str1):
+    """
+    Merge horizontally two sites of the lattice,
+    the site should be of the format given by
+    the function :func:`site_str`
+
+    Parameters
+    ----------
+    site_str0 : dict
+        First site to be stacked
+    site_str1 : dict
+        Second site to be stacked (on the right)
+
+    Returns
+    -------
+    dict
+        Stacked site
+    """
     stacked_site = {}
     for key in site_str0:
         stacked_site[key] = []
@@ -123,6 +185,20 @@ def stack_horizontally(site_str0, site_str1):
     return stacked_site
 
 def printable_site_str(site_str):
+    """
+    Pass from the dictionary to a string
+    to be directly printed
+
+    Parameters
+    ----------
+    site_str : dict
+        Site dictionary
+
+    Returns
+    -------
+    str
+        String representing the site on the lattice
+    """
     pr_site = '\n'.join(site_str['n']) +'\n' + site_str['c'][0] + '\n' + '\n'.join(site_str['s'])
     pr_site += '\n'
 
