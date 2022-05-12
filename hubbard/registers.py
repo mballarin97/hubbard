@@ -23,6 +23,7 @@ class SiteRegister():
 
         name, str_list = self._init_site_register(xpos, ypos, shape)
         self.name = name
+        self.is_even = (xpos+ypos)%2 == 0
         self._keys = str_list
         self.map = zip(self._keys, range(len(str_list)) )
 
