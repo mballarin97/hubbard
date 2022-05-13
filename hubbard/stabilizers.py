@@ -78,7 +78,7 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx):
     return qc
 
 
-def apply_site_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx):
+def apply_vertex_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx):
     """
     Apply the parity stabilizer to the matter inside a site of the
     Hubbard defermoinised model, recording the result of the projective
@@ -116,11 +116,11 @@ def apply_site_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx):
         (0,0)--(1,0)--(2,0)
 
     """
-    site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]}' ]
+    site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]})' ]
 
     # Apply controlled x for checking the parity of a site
     for matter in ('u', 'd'):
-        qc.cx(site_reg[matter], matter)
+        qc.cx(site_reg[matter], ancilla)
 
     # Apply projective measurement
     qc.measure(ancilla, cl_reg)
