@@ -80,9 +80,9 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx):
 
 def apply_site_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx):
     """
-    Apply the parity stabilizer to a site of the Hubbard defermoinised model,
-    recording the result of the projective measurement on a classical
-    register
+    Apply the parity stabilizer to the matter inside a site of the
+    Hubbard defermoinised model, recording the result of the projective
+    measurement on a classical register.
 
     Parameters
     ----------
@@ -119,11 +119,17 @@ def apply_site_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx):
     site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]}' ]
 
     # Apply controlled x for checking the parity of a site
-    for rishon in site_reg.map:
-        qc.cx(ancilla, site_reg[rishon])
+    for matter in ('u', 'd'):
+        qc.cx(site_reg[matter], matter)
 
     # Apply projective measurement
     qc.measure(ancilla, cl_reg)
+
+    # Apply a controlled x operation
+    qc.x(site_reg['u']).c_if(cl_reg, 1)
+
+    # Reset the ancilla
+    qc.reset(ancilla)
 
     return qc
 
@@ -164,16 +170,16 @@ def apply_link_parity_stabilizer(qc, regs, ancilla, cl_reg, link_idx):
           |       |       |       |
         (0,3)   (1,3)   (2,3)   (3,3)
           |       |       |       |
-          q-(0,2)-q-(1,2)-q-(1,3)-q
+          q-(0,2)-q-(1,2)-q-(2,2)-q
           |       |       |       |
         (0,1)   (1,1)   (2,1)   (3,1)
           |       |       |       |
           q-(0,0)-q-(1,0)-q-(2,0)-q
 
     """
-    # If the index is even the link is horizontal,
-    # otherwise vertical
-    is_horizontal = (np.sum(link_idx)%2 == 0)
+    # If the y component of the index is even
+    # the link is horizontal, otherwise vertical
+    is_horizontal = (link_idx[1]%2 == 0)
     if is_horizontal:
         involved_sites = [
             f'q({link_idx[0]}, {link_idx[1]})',
@@ -189,9 +195,15 @@ def apply_link_parity_stabilizer(qc, regs, ancilla, cl_reg, link_idx):
 
     # Apply controlled x for checking the parity of a site
     for site, rishon in zip(involved_sites, involved_rishons):
-        qc.cx(ancilla, regs[site][rishon])
+        qc.cx(regs[site][rishon], ancilla)
 
     # Apply projective measurement
     qc.measure(ancilla, cl_reg)
+
+    # Apply a controlled x operation
+    qc.x(regs[involved_sites[0]][involved_rishons[0]]).c_if(cl_reg, 1)
+
+    # Reset the ancilla
+    qc.reset(ancilla)
 
     return qc

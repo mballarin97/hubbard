@@ -32,7 +32,7 @@ def hubbard_circuit(shape, ancilla_register, classical_registers):
             registers[reg.name] = reg
             reg_for_init.append( reg.qregister)
 
-    qc = QuantumCircuit(*reg_for_init, ancilla_register, classical_registers,
+    qc = QuantumCircuit(*reg_for_init, ancilla_register, *classical_registers,
         name=f'Hubbard {shape}')
 
     return registers, qc

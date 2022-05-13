@@ -102,7 +102,8 @@ def lattice_state(str_state, regs, shape):
     return lattice
 
 
-def site_str(up, down, north=None, south=None, west=None, east=None):
+def site_str(up, down, north=None, south=None, west=None, east=None,
+    colored=True):
     """
     Write the site in lattice form
 
