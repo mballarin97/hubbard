@@ -29,6 +29,10 @@ class SiteRegister():
 
         self._qregister = QuantumRegister(len(str_list), name)
 
+    def __repr__(self):
+        """ Default class representation """
+        return self.name
+
     def __len__(self):
         """ Number of qubits in the register """
         return len(self._keys)
@@ -97,3 +101,21 @@ class SiteRegister():
         name = f'q({xpos}, {ypos})'
 
         return name, str_list
+
+
+class QCSiteRegister(SiteRegister):
+    """
+    Version of the class for the MPS
+    simulation. Get the register name by simply
+    using the class, and the relative index using
+    the square brackets
+
+    """
+
+    def __getitem__(self, key):
+        """ Get access to the correct qubit index """
+        if key not in self._keys:
+            raise KeyError(f'{key} not in the available keys. Available keys are '+
+                str(self._keys))
+
+        return self.map[key]
