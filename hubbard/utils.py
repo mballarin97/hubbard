@@ -128,33 +128,35 @@ def site_str(up, down, north=None, south=None, west=None, east=None):
     """
     site_repr = {}
     if west is None and east is None:
-        east_len = 3
+        east_len = 5
         west_len = 2
     elif west is None and east is not None:
-        east_len = 6
+        east_len = 8
         west_len = 2
-        site_repr['c'] = [f'[{up},{down}]--{east}-']
+        site_repr['c'] = [f'│{up},{down}├───{east}─']
     elif west is not None and east is None:
-        east_len = 3
+        east_len = 5
         west_len = 5
-        site_repr['c'] = [f'{west}--[{up},{down}]']
+        site_repr['c'] = [f'{west}───┤{up},{down}│']
     else:
-        east_len = 6
+        east_len = 8
         west_len = 5
-        site_repr['c'] = [f'{west}--[{up},{down}]--{east}-']
+        site_repr['c'] = [f'{west}───┤{up},{down}├───{east}─']
 
     if north is not None:
-        site_repr['n'] = [' '*west_len+ '|'+' '*east_len  ]
+        site_repr['n'] = [' '*west_len+ '│'+' '*east_len  ]
         site_repr['n'] += [' '*west_len+ f'{north}'+' '*east_len  ]
-        site_repr['n'] += [' '*west_len+ '|'+' '*east_len  ]
+        site_repr['n'] += [' '*west_len+ '│'+' '*east_len  ]
+        site_repr['n'] += [' '*(west_len-2) +'┌─┴─┐'+ ' '*(east_len-2)  ]
     else:
-        site_repr['n'] = []
+        site_repr['n'] = [' '*(west_len-2) +'┌───┐' +' '*(east_len-2)  ]
 
     if south is not None:
-        site_repr['s'] = [' '*west_len+ '|'+' '*east_len  ]
+        site_repr['s'] = [' '*(west_len-2) +'└─┬─┘' +' '*(east_len-2)  ]
+        site_repr['s'] += [' '*west_len+ '│'+' '*east_len  ]
         site_repr['s'] += [' '*west_len+ f'{south}'+' '*east_len  ]
     else:
-        site_repr['s'] = []
+        site_repr['s'] = [' '*(west_len-2) +'└───┘' +' '*(east_len-2)  ]
 
     return site_repr
 
