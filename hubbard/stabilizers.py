@@ -1,6 +1,5 @@
-import numpy as np
 
-def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx):
+def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correct=True):
     """
     Apply the stabilizer to a plaquette of the Hubbard defermoinised model,
     recording the result of the projective measurement on a classical
@@ -19,6 +18,9 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx):
     plaquette_idx : tuple of ints
         XY position of the plaquette where you will apply the stabilizar.
         Plaquettes are numbered from 0, left to right, from low to up
+    correct : bool, optional
+        If True, apply the correction after the stabilizer measurements.
+        Otherwise do nothing. Default to True
 
     Return
     ------
@@ -69,8 +71,9 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx):
     qc.h(ancilla)
     qc.measure(ancilla, cl_reg[0])
 
-    # Apply a controlled z operation
-    qc.z(regs[involved_regs['br']]['n']).c_if(cl_reg, 1)
+    if correct:
+        # Apply a controlled z operation
+        qc.z(regs[involved_regs['br']]['n']).c_if(cl_reg, 1)
 
     # Reset the ancilla
     qc.reset(ancilla)
@@ -78,7 +81,7 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx):
     return qc
 
 
-def apply_vertex_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx):
+def apply_vertex_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx, correct=True):
     """
     Apply the parity stabilizer to the matter inside a site of the
     Hubbard defermoinised model, recording the result of the projective
@@ -97,6 +100,9 @@ def apply_vertex_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx):
     site_idx : tuple of ints
         XY position of the plaquette where you will apply the stabilizar.
         Plaquettes are numbered from 0, left to right, from low to up
+    correct : bool, optional
+        If True, apply the correction after the stabilizer measurements.
+        Otherwise do nothing. Default to True
 
     Return
     ------
@@ -125,15 +131,16 @@ def apply_vertex_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx):
     # Apply projective measurement
     qc.measure(ancilla, cl_reg)
 
-    # Apply a controlled x operation
-    qc.x(site_reg['u']).c_if(cl_reg, 1)
+    if correct:
+        # Apply a controlled x operation
+        qc.x(site_reg['u']).c_if(cl_reg, 1)
 
     # Reset the ancilla
     qc.reset(ancilla)
 
     return qc
 
-def apply_link_parity_stabilizer(qc, regs, ancilla, cl_reg, link_idx):
+def apply_link_parity_stabilizer(qc, regs, ancilla, cl_reg, link_idx, correct=True):
     """
     Apply the parity stabilizer to a link of the Hubbard defermoinised model,
     recording the result of the projective measurement on a classical
@@ -154,6 +161,9 @@ def apply_link_parity_stabilizer(qc, regs, ancilla, cl_reg, link_idx):
         Plaquettes are numbered from 0, left to right, from low to up.
         Please refer to the example: in this case the numbering is NOT
         trivial.
+    correct : bool, optional
+        If True, apply the correction after the stabilizer measurements.
+        Otherwise do nothing. Default to True
 
     Return
     ------
@@ -200,8 +210,9 @@ def apply_link_parity_stabilizer(qc, regs, ancilla, cl_reg, link_idx):
     # Apply projective measurement
     qc.measure(ancilla, cl_reg)
 
-    # Apply a controlled x operation
-    qc.x(regs[involved_sites[0]][involved_rishons[0]]).c_if(cl_reg, 1)
+    if correct:
+        # Apply a controlled x operation
+        qc.x(regs[involved_sites[0]][involved_rishons[0]]).c_if(cl_reg, 1)
 
     # Reset the ancilla
     qc.reset(ancilla)
