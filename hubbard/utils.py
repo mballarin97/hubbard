@@ -1,38 +1,38 @@
 import numpy as np
 
-def lattice_str(dense_state, regs, shape):
+def lattice_str(state, regs, shape, use_1d_map=False):
     """
     Prints a *dense_state* with kets, Following the numbering
     of the registers
 
     Parameters
     ----------
-    dense_state: array_like
+    state: array_like or dict
         Dense representation of a quantum state
     regs: dict
         Dictionary of sites register
     shape: tuple
         Shape of the hubbard lattice
+    use_1d_map : bool, optional
+        If True, use the 1d map when sorting out indexes. Default to False.
 
     Returns
     -------
     str
         String representing the lattice state, that can be printed or saved on file
     """
-    NN = int(np.log2(len(dense_state)))
-
-    # Remove the ancilla qubit
-    dense_state = dense_state.reshape([2]*NN)
-    dense_state = np.tensordot(dense_state, np.ones(2), ([0], [0]))
-    dense_state = dense_state.reshape(2**(NN-1) )
-
-    binaries = [bin(ii)[2:] for ii in range(2**NN)]
-    binaries = ['0'*(NN-len(a)) + a for a in binaries] #Pad with 0s
+    if isinstance(state, dict):
+        binaries = np.array( list(state.keys() ))
+        state = np.array( list(state.values() ))
+    else:
+        NN = int(np.log2(len(state)))
+        binaries = [bin(ii)[2:] for ii in range(2**NN)]
+        binaries = ['0'*(NN-len(a)) + a for a in binaries] #Pad with 0s
 
     lattice = []
-    for ii, coef in enumerate(dense_state):
+    for ii, coef in enumerate(state):
         if not np.isclose(np.abs(coef), 0.):
-            lat_state = lattice_state(binaries[ii], regs, shape)
+            lat_state = lattice_state(binaries[ii], regs, shape, use_1d_map)
             if np.isclose(np.imag(coef), 0.):
                 if np.isclose(np.real(coef), 1.):
                     lattice.append( ['',  lat_state] )
@@ -51,7 +51,7 @@ def lattice_str(dense_state, regs, shape):
 
     return lattice_string
 
-def lattice_state(str_state, regs, shape):
+def lattice_state(str_state, regs, shape, use_1d_map=False):
     """
     Starting from a string state, i.e. '0000' return
     the state distributed in the lattice
@@ -64,6 +64,8 @@ def lattice_state(str_state, regs, shape):
         dictionary of SiteRegisters
     shape : tuple
         Shape of the Hubbard lattice
+    use_1d_map : bool, optional
+        If True, use the 1d map when sorting out indexes. Default to False.s
 
     Returns
     -------
@@ -75,7 +77,11 @@ def lattice_state(str_state, regs, shape):
 
     old_idx = 0
     for xy, reg in regs.items():
-        current_idxs = str_state[old_idx:old_idx+len(reg.map)]
+        if use_1d_map:
+            current_idxs = [str_state[reg[species] ] for species in reg.map ]
+            current_idxs = ''.join(current_idxs)
+        else:
+            current_idxs = str_state[old_idx:old_idx+len(reg.map)]
 
         idxs = {}
         for key, val in reg.map.items():

@@ -1,9 +1,10 @@
 from hubbard.utils import lattice_str
-from hubbard.circuit import hubbard_circuit, initialize_chessboard
-from hubbard.stabilizers import apply_plaquette_stabilizers, apply_link_parity_stabilizer, apply_vertex_parity_stabilizer
+from hubbard.qiskit.circuit import hubbard_circuit, initialize_chessboard
+from hubbard.qiskit.stabilizers import apply_plaquette_stabilizers, apply_link_parity_stabilizer, apply_vertex_parity_stabilizer
 from qiskit import AncillaRegister, ClassicalRegister, execute
 from qiskit.providers.aer import StatevectorSimulator
 from qiskit.result import marginal_counts
+import numpy as np
 
 backend = StatevectorSimulator(precision='single')
 
@@ -37,6 +38,12 @@ results = res.result()
 counts = results.get_counts()
 #print(counts )
 statevect = results.get_statevector(qc, decimals=3).data
+
+# Remove the ancilla qubit
+dense_state = statevect.reshape([2]*NN)
+dense_state = np.tensordot(dense_state, np.ones(2), ([0], [0]))
+dense_state = dense_state.reshape(2**(NN-1) )
+
 
 res = lattice_str(statevect, regs, shape )
 
