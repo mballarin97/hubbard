@@ -73,7 +73,7 @@ def apply_plaquette_stabilizers(qc, regs, cl_reg, plaquette_idx, correct=True,
             'br' : ['n', 'w'],
         }
     else:
-        corner_order = ['ul', 'bl' 'br', 'ur']
+        corner_order = ['ul', 'bl', 'br', 'ur']
         relative_rishons = {
             'ul' : ['e', 's'],
             'bl' : ['n', 'e'],
