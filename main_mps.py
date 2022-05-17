@@ -13,28 +13,26 @@ qc = apply_plaquette_stabilizers(qc, regs, 'plaquette1', (0,0) )
 
 obsv = obs.TNObservables()
 obsv += obs.TNObsProbabilities('E', prob_threshold=0.1)
-#qc = apply_plaquette_stabilizers(qc, regs, qancilla[0], cancilla[0], (0,0) )
 
 
 # Apply error on site (0,0) rishon 'n'
-#qc.x(regs['q(0, 0)']['d'] )
-#qc.cx(regs['q(0, 0)']['n'], regs['q(0, 1)']['s'])
+#qc.x(regs['q(0, 0)']['n'] )
+qc.cx( [regs['q(0, 0)']['n'], regs['q(0, 1)']['s']] )
 
 # Apply correction through link stabilizer
-#qc = apply_link_parity_stabilizer(qc, regs, qancilla[0], cancilla1, (0, 1))
+qc = apply_link_parity_stabilizer(qc, regs, 'link1', (0, 1))
 
 # Apply correction through vertex stabilizer
-#qc = apply_vertex_parity_stabilizer(qc, regs, qancilla[0], cancilla1, (0, 0))
+#qc = apply_vertex_parity_stabilizer(qc, regs, 'vertex1', (0, 0))
 
 # Apply correction with plaquette
-#qc = apply_plaquette_stabilizers(qc, regs, qancilla[0], cancilla1, (0,0) )
+qc = apply_plaquette_stabilizers(qc, regs, 'plaquette2', (0,0) )
 
 qc.measure_observables('final', obsv)
 simulator = QcMps(num_sites, convergence_parameters=QCConvergenceParameters(100))
 res = simulator.run_from_qcirc(qc)
 probs = res['final']['even_probability']['default']
-print(res)
-
+print(qc.cregisters)
 
 res = lattice_str(probs, regs, shape, use_1d_map=True )
 

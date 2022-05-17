@@ -91,7 +91,6 @@ def apply_plaquette_stabilizers(qc, regs, cl_reg, plaquette_idx, correct=True,
     qc.add_qregister(ancilla, [first_site+1], reference_register='default')
     # Apply hadamard to the ancilla
     qc.h( 0, qreg=ancilla )
-
     # Apply cx
     for idx, corner in enumerate(corner_order):
         for jdx, rishon in enumerate(relative_rishons[corner]):
@@ -107,7 +106,7 @@ def apply_plaquette_stabilizers(qc, regs, cl_reg, plaquette_idx, correct=True,
     if correct:
         c_if = ClassicalCondition(cl_reg, 1, 0)
         # Apply a controlled x operation
-        qc.x(regs[involved_regs['br']]['n'], c_if = c_if)
+        qc.z(regs[involved_regs['br']]['n'], c_if = c_if)
 
     # Reset the ancilla
     qc.remove_qregister(ancilla)
@@ -172,7 +171,7 @@ def apply_vertex_parity_stabilizer(qc, regs, cl_reg, site_idx, correct=True,
 
     # Apply controlled x for checking the parity of a site
     for matter in ('u', 'd'):
-        qc.cx( [site_reg[matter], ancilla], qreg = ['default', ancilla] )
+        qc.cx( [site_reg[matter], 0], qreg = ['default', ancilla] )
 
     # Apply projective measurement
     qc.measure_projective(0, 0, ancilla, cl_reg, selected_output=selected_output)
@@ -275,7 +274,7 @@ def apply_link_parity_stabilizer(qc, regs, cl_reg, link_idx, correct=True,
     qc.measure_projective(0, 0, ancilla, cl_reg, selected_output=selected_output)
 
     if correct:
-        c_if = ClassicalCondition(cl_reg, 1, 0)
+        c_if = ClassicalCondition(cl_reg, value=1, idx=0)
         # Apply a controlled x operation
         qc.x(first_site, c_if = c_if)
 
