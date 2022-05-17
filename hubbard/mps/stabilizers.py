@@ -6,9 +6,6 @@ from qcomps.circuit import Qcircuit, ClassicalCondition
 def apply_plaquette_stabilizers(qc, regs, cl_reg, plaquette_idx, correct=True,
     selected_output=None):
     """
-
-    TODO: MOVING ANCILLA FOR MPS
-
     Apply the stabilizer to a plaquette of the Hubbard defermoinised model,
     recording the result of the projective measurement on a classical
     register

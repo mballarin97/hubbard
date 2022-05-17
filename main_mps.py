@@ -42,6 +42,7 @@ res = lattice_str(probs, regs, shape, use_1d_map=True )
 print( res )
 
 shapes = [ max(tens.shape) for tens in simulator]
+print(shapes)
 print(f'==== MAX BOND DIMENSION = {max(shapes)} ====')
 with open(f'lattice_{shape[0]}x{shape[1]}.txt', 'w') as fh:
     fh.write(res)
