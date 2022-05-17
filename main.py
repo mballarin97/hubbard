@@ -40,9 +40,10 @@ counts = results.get_counts()
 statevect = results.get_statevector(qc, decimals=3).data
 
 # Remove the ancilla qubit
-dense_state = statevect.reshape([2]*NN)
+num_sites = int(np.log2(len(statevect)))
+dense_state = statevect.reshape([2]*num_sites)
 dense_state = np.tensordot(dense_state, np.ones(2), ([0], [0]))
-dense_state = dense_state.reshape(2**(NN-1) )
+dense_state = dense_state.reshape(2**(num_sites-1) )
 
 
 res = lattice_str(statevect, regs, shape )
