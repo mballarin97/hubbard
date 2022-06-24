@@ -26,6 +26,7 @@ class SiteRegister():
         self.is_even = (xpos+ypos)%2 == 0
         self._keys = str_list
         self.map = dict(zip(self._keys, range(len(str_list)) ))
+        self.pos = (xpos, ypos)
 
         self._qregister = QuantumRegister(len(str_list), name)
 
