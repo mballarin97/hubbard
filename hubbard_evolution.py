@@ -1,13 +1,12 @@
 import numpy as np
 
-from qiskit import QuantumRegister, transpile
-from qiskit.aqua.operators import WeightedPauliOperator
+from qiskit import transpile
 from qiskit import AncillaRegister, ClassicalRegister, execute
 from qiskit.providers.aer import StatevectorSimulator
 
 from hubbard.qiskit.circuit import hubbard_circuit, initialize_chessboard
 from hubbard.qiskit.stabilizers import apply_plaquette_stabilizers
-from hubbard.qiskit.evolution import generate_global_hopping, from_operators_to_pauli_dict
+from hubbard.qiskit.evolution import evolution_operation
 from hubbard.utils import lattice_str
 
 
@@ -27,20 +26,12 @@ if __name__ == '__main__':
     qc = apply_plaquette_stabilizers(qc, regs, qancilla[0], cancilla, (0,0) )
     qc.barrier()
 
-    # Initialize hopping evolution operator
-    avail_links = [(0, 0), (0, 1), (1, 1), (0, 2) ]
-    hopping_hamiltonian = {}
-    for link_idx in avail_links:
-        for specie in ('u', 'd'):
-            hop_term = generate_global_hopping(qc, regs, link_idx, specie)
-            hopping_hamiltonian.update(hop_term)
-    pauli_dict = from_operators_to_pauli_dict(hopping_hamiltonian)
-    hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
-
     # Create evolution circuit
-    evol_time = -1/(2*np.pi)
-    evolution_instruction = hamiltonian.evolve_instruction(evo_time=evol_time,
-        expansion_order=2)
+    int_const = 1
+    site_const = 0
+    dt = 0.1
+    num_tsteps = 100
+    evolution_instruction = evolution_operation(qc, regs, shape, int_const, site_const, dt, num_tsteps)
     qc.append(evolution_instruction, range(qc.num_qubits-1))
     # construct the circuit with Qiskit basis gates
     qc = transpile(qc, basis_gates=[ 'u2', 'u3', 'cx', 'h', 'ry', 'rz', 'rx'])
