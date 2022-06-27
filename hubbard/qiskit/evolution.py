@@ -2,6 +2,7 @@
 
 from qiskit import *
 import numpy as np
+from ..operators import generate_hopping
 
 def exp_all_z(circuit, quantum_register,
               pauli_idexes, control_qubit=None, t=1):
@@ -112,3 +113,87 @@ def hamiltonian_simulation(hamiltonian, quantum_register=None,
         exp_hamiltonian += exp_delta_t
 
     return exp_hamiltonian
+
+def generate_global_hopping(qc, regs, link_idx, species):
+    """
+    Generate the hopping operators of the hamiltonian given the
+    jordan-wigner transformation. Thus, the output are Pauli strings.
+    The operator is global in the sense that is padded with identities.
+
+    Parameters
+    ----------
+    qc : :py:class:`QuantumCircuit`
+        Quantum circuit class containing the Hubbard circuit
+    regs : dict
+        Dictionary of the SiteRegisters
+    link_idx : tuple
+        Unique identifier of the link where the hopping will take place
+    species : str
+        Matter species involved in the hopping
+
+    Example
+    -------
+    We report here an example of the link numbering
+
+    .. code-block::
+
+          q-(0,4)-q-(1,4)-q-(2,4)-q
+          |       |       |       |
+        (0,3)   (1,3)   (2,3)   (3,3)
+          |       |       |       |
+          q-(0,2)-q-(1,2)-q-(2,2)-q
+          |       |       |       |
+        (0,1)   (1,1)   (2,1)   (3,1)
+          |       |       |       |
+          q-(0,0)-q-(1,0)-q-(2,0)-q
+    """
+    # Generate the local operator, defined only on the interested
+    # registers
+    local_operators, (from_site_reg, to_site_reg) = generate_hopping(regs, link_idx, species)
+    operators = local_operators.keys()
+    num_qubs = np.sum([len(reg.map) for reg in regs.values()])
+
+    # Generate the global operators, padded with identities
+    global_operator = [ ['I']*num_qubs, ['I']*num_qubs ]
+    operators = [op.split('⊗') for op in operators]
+    for ii, qubit in enumerate(from_site_reg.qregister):
+        qidx = qc.find_bit(qubit).index
+        for jj in range(2):
+            global_operator[jj][qidx] = operators[jj][0][ii]
+
+    for ii, qubit in enumerate(to_site_reg.qregister):
+        qidx = qc.find_bit(qubit).index
+        for jj in range(2):
+            global_operator[jj][qidx] = operators[jj][1][ii]
+
+    global_operator = [''.join(gl) for gl in global_operator]
+    return dict(zip(global_operator, local_operators.values()) )
+
+def from_operators_to_pauli_dict(pauli_hamiltonian):
+    """
+    Transform a Hamiltonian described as a dict, where the keys
+    are the pauli strings and the values the coefficients into
+    a pauli dict that can be read by the qiskit class
+    :py:class:`WeightedPauliOperator`.
+
+    Parameters
+    ----------
+    pauli_hamiltonian : dict
+        Pauli hamiltonian. the keys are the pauli strings and
+        the values the coefficients
+
+    Returns
+    -------
+    dict
+        Pauli dict to be used in `WeightedPauliOperator.from_dict`
+    """
+    paulis = []
+    for label, coeff in pauli_hamiltonian.items():
+        paulis += [
+            {
+                "coeff": {"imag": np.imag(coeff), "real": np.real(coeff)},
+                "label": label
+            }
+        ]
+
+    return { 'paulis': paulis }

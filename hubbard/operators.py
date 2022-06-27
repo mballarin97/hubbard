@@ -39,14 +39,14 @@ def generate_hopping(regs, link_idx, species):
     # the link is horizontal, otherwise vertical
     is_horizontal = (link_idx[1]%2 == 0)
     if is_horizontal:
-        from_site_reg = regs[ f'q({link_idx[0]}, {link_idx[1]})' ]
-        to_site_reg = regs[ f'q({link_idx[0]+1}, {link_idx[1]})' ]
+        from_site_reg = regs[ f'q({link_idx[0]}, {link_idx[1]//2})' ]
+        to_site_reg = regs[ f'q({link_idx[0]+1}, {link_idx[1]//2})' ]
     else:
         from_site_reg = regs[ f'q({link_idx[0]}, {link_idx[1]-1})' ]
         to_site_reg = regs[ f'q({link_idx[0]}, {link_idx[1]})' ]
 
-    from_site_list = np.array(['1' for _ in from_site_reg.map])
-    to_site_list = np.array(['1' for _ in to_site_reg.map])
+    from_site_list = np.array(['I' for _ in from_site_reg.map])
+    to_site_list = np.array(['I' for _ in to_site_reg.map])
 
     from_site_list[ from_site_reg.map[species] ] = 'Y'
     to_site_list[ to_site_reg.map[species] ] = 'X'
