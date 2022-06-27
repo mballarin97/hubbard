@@ -39,13 +39,6 @@ if __name__ == '__main__':
 
     # Create evolution circuit
     evol_time = -1/(2*np.pi)
-    qq = []
-    for qreg in qc.qregs:
-        if isinstance(qreg, AncillaRegister):
-            continue
-        for qubit in qreg:
-            qq.append(qubit)
-    new_qreg = QuantumRegister(bits=qq)
     evolution_instruction = hamiltonian.evolve_instruction(evo_time=evol_time,
         expansion_order=2)
     qc.append(evolution_instruction, range(qc.num_qubits-1))
