@@ -317,22 +317,31 @@ def compute_expectation(qc, regs, shape, statevect, interaction_constant):
             hop_term = generate_global_hopping(qc, regs, link_idx, specie, interaction_constant)
             hubbard_hamiltonian.update(hop_term)
 
-    hamiltonian_expectation = 0
-    qc = QuantumCircuit(*qc.qregs)
-    initialize(qc, statevect)
-    for key, val in hubbard_hamiltonian.items():
-        current_qc = deepcopy(qc)
-        for idx, pauli in enumerate(key):
-            if pauli == 'X':
-                current_qc.x(idx)
-            elif pauli == 'Z':
-                current_qc.z(idx)
-            elif pauli == 'Y':
-                current_qc.y(idx)
+    pauli_dict = from_operators_to_pauli_dict(hubbard_hamiltonian)
+    hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
 
-        res = execute(qc, backend=backend )
-        results = res.result()
-        ket = results.get_statevector(qc)
-        hamiltonian_expectation += np.vdot(statevect, ket)*val
+    # Remove the ancilla qubit
+    dense_state = statevect.data.reshape([2]*qc.num_qubits)
+    dense_state = np.tensordot(dense_state, np.ones(2), ([0], [0]))
+    statevect._data = dense_state.reshape(2**(qc.num_qubits-1) )
+    hamiltonian_expectation = hamiltonian.evaluate_with_statevector(statevect)
+
+    if False:
+        qc = QuantumCircuit(*qc.qregs)
+        initialize(qc, statevect)
+        for key, val in hubbard_hamiltonian.items():
+            current_qc = deepcopy(qc)
+            for idx, pauli in enumerate(key):
+                if pauli == 'X':
+                    current_qc.x(idx)
+                elif pauli == 'Z':
+                    current_qc.z(idx)
+                elif pauli == 'Y':
+                    current_qc.y(idx)
+
+            res = execute(qc, backend=backend )
+            results = res.result()
+            ket = results.get_statevector(qc)
+            hamiltonian_expectation += np.vdot(statevect, ket)*val
 
     return hamiltonian_expectation
