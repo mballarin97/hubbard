@@ -1,9 +1,12 @@
 # code from https://github.com/DavitKhach/quantum-algorithms-tutorials/blob/master/Hamiltonian_simulation.ipynb
 
+from copy import deepcopy
 from qiskit import *
 from qiskit.aqua.operators import WeightedPauliOperator
 import numpy as np
 from ..operators import generate_hopping
+from qiskit.extensions.quantum_initializer.initializer import initialize
+from qiskit.providers.aer import StatevectorSimulator
 
 def exp_all_z(circuit, quantum_register,
               pauli_idexes, control_qubit=None, t=1):
@@ -300,3 +303,36 @@ def evolution_operation(qc, regs, shape,
         expansion_order=2, num_time_slices=num_timesteps)
 
     return evolution_instruction
+
+def compute_expectation(qc, regs, shape, statevect, interaction_constant):
+
+    backend = StatevectorSimulator(precision='double')
+    # Links available in lattice of given shape
+    avail_links = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]+1)]
+    avail_links += [(shape[0]-1, jj) for jj in range(shape[1]) if jj%2==1]
+
+    hubbard_hamiltonian = {}
+    for link_idx in avail_links:
+        for specie in ('u', 'd'):
+            hop_term = generate_global_hopping(qc, regs, link_idx, specie, interaction_constant)
+            hubbard_hamiltonian.update(hop_term)
+
+    hamiltonian_expectation = 0
+    qc = QuantumCircuit(*qc.qregs)
+    initialize(qc, statevect)
+    for key, val in hubbard_hamiltonian.items():
+        current_qc = deepcopy(qc)
+        for idx, pauli in enumerate(key):
+            if pauli == 'X':
+                current_qc.x(idx)
+            elif pauli == 'Z':
+                current_qc.z(idx)
+            elif pauli == 'Y':
+                current_qc.y(idx)
+
+        res = execute(qc, backend=backend )
+        results = res.result()
+        ket = results.get_statevector(qc)
+        hamiltonian_expectation += np.vdot(statevect, ket)*val
+
+    return hamiltonian_expectation
