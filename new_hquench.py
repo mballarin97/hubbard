@@ -7,9 +7,10 @@ from qiskit.providers.aer import StatevectorSimulator
 
 from hubbard.new_encoding.circuit import hubbard_circuit, initialize_chessboard
 from hubbard.new_encoding.stabilizers import apply_plaquette_stabilizers
-from hubbard.new_encoding.evolution import evolution_operation, compute_expectation
+from hubbard.new_encoding.evolution import evolution_operation, compute_kinetic_expectation
 from hubbard.utils import lattice_str
 from tqdm import tqdm
+from qmatchatea import print_state
 
 
 if __name__ == '__main__':
@@ -22,14 +23,20 @@ if __name__ == '__main__':
     cancilla1 = ClassicalRegister(1, 'ca1')
 
     # Initialize Hubbard state
+    quench = True
     shape = (2, 2)
     regs, qc = hubbard_circuit(shape, qancilla, [cancilla, cancilla1] )
     qc = initialize_chessboard(qc, regs)
-    qc = apply_plaquette_stabilizers(qc, regs, qancilla[0], cancilla, (0,0) )
+    plaquettes = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]-1) ]
+    for pp in plaquettes:
+        qc = apply_plaquette_stabilizers(qc, regs, qancilla[0], cancilla, pp )
     qc.barrier()
 
     num_steps = 100 # Number of steps to pass from one onsite const to the other
-    onsite_consts = np.linspace(-8, -1/8, num_steps)
+    if quench:
+        onsite_consts = [-8 for _ in range(num_steps//10)]+ [-1/8 for _ in range(num_steps-num_steps//10)]
+    else:
+        onsite_consts = np.linspace(-8, -1/8, num_steps)
 
     # Parameter for single step in the evolution
     int_const = 1
@@ -51,7 +58,11 @@ if __name__ == '__main__':
         res = execute(qc, backend=backend )
         results = res.result()
         statevect = results.get_statevector(qc)
-        exp = compute_expectation(qc, regs, shape, statevect, int_const)
+        print_state(statevect.data)
+        #import matplotlib.pyplot as plt
+        #plt.plot(np.conj(statevect.data[statevect.data <0.1] )* statevect.data[statevect.data <0.1], 'o')
+        #plt.show()
+        exp = compute_kinetic_expectation(qc, regs, shape, statevect, 1)
 
         expectations.append(exp)
         idx += 1
@@ -59,4 +70,7 @@ if __name__ == '__main__':
     #res = lattice_str(statevect, regs, shape )
 
     #print( res )
-    np.savetxt('quench_results.txt', expectations)
+        if quench:
+            np.savetxt(f'results_quench{shape}.txt', expectations)
+        else:
+            np.savetxt(f'results_adiabatic{shape}.txt', expectations)

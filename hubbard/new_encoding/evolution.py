@@ -1,6 +1,7 @@
 # code from https://github.com/DavitKhach/quantum-algorithms-tutorials/blob/master/Hamiltonian_simulation.ipynb
 
 from copy import deepcopy
+from qiskit import QuantumCircuit
 from qiskit.aqua.operators import WeightedPauliOperator
 import numpy as np
 from ..operators import generate_hopping
@@ -8,7 +9,7 @@ from ..qiskit.evolution import from_operators_to_pauli_dict
 from qiskit.extensions.quantum_initializer.initializer import initialize
 from qiskit.providers.aer import StatevectorSimulator
 
-def generate_global_hopping(qc, regs, link_idx, species, coupling=1):
+def generate_global_hopping(qc, regs, link_idx, species, coupling=1, invert = True):
     """
     Generate the hopping operators of the hamiltonian given the
     jordan-wigner transformation. Thus, the output are Pauli strings.
@@ -69,8 +70,10 @@ def generate_global_hopping(qc, regs, link_idx, species, coupling=1):
         qidx = qc.find_bit(qubit).index
         for jj in range(2):
             global_operator[jj][qidx] = operators[jj][1][ii]
-
-    global_operator = [''.join(gl) for gl in global_operator]
+    if invert:
+        global_operator = [''.join(gl[::-1]) for gl in global_operator]
+    else:
+        global_operator = [''.join(gl) for gl in global_operator]
     values = coupling * np.array(list(local_operators.values()))
     return dict(zip(global_operator, values) )
 
@@ -108,7 +111,7 @@ def generate_global_onsite(qc, regs, site_idx, potential=1):
     # Generate the local operator, defined only on the interested
     # registers
     site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]})' ]
-    num_qubs = qc.num_qubits-1
+    num_qubs = qc.num_qubits
 
     # Generate the global operators, padded with identities
     global_operator = ['I']*num_qubs
@@ -117,7 +120,7 @@ def generate_global_onsite(qc, regs, site_idx, potential=1):
         qidx = qc.find_bit(qubit).index
         global_operator[qidx] = operators[ii]
 
-    global_operator = ''.join(global_operator)
+    global_operator = ''.join(global_operator[::-1])
     return {global_operator: 0.5*potential}
 
 def evolution_operation(qc, regs, shape,
@@ -173,7 +176,7 @@ def evolution_operation(qc, regs, shape,
 
     return evolution_instruction
 
-def compute_expectation(qc, regs, shape, statevect, interaction_constant):
+def compute_kinetic_expectation(qc, regs, shape, statevect, interaction_constant):
 
     backend = StatevectorSimulator(precision='double')
     # Links available in lattice of given shape
@@ -183,13 +186,67 @@ def compute_expectation(qc, regs, shape, statevect, interaction_constant):
     hubbard_hamiltonian = {}
     for link_idx in avail_links:
         for specie in ('u', 'd'):
-            hop_term = generate_global_hopping(qc, regs, link_idx, specie, interaction_constant)
+            hop_term = generate_global_hopping(qc, regs, link_idx, specie, interaction_constant, False)
             hubbard_hamiltonian.update(hop_term)
 
     pauli_dict = from_operators_to_pauli_dict(hubbard_hamiltonian)
     hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
+    if False:
+        qc = QuantumCircuit(qc.num_qubits)
+        circs = hamiltonian.construct_evaluation_circuit(qc, True)
+        for circ in circs:
+            import matplotlib.pyplot as plt
+            circ.draw('mpl')
+            plt.show()
 
     # Remove the ancilla qubit
-    hamiltonian_expectation = hamiltonian.evaluate_with_statevector(statevect)
+    hamiltonian_expectation = hamiltonian.evaluate_with_statevector(statevect.data)
 
     return hamiltonian_expectation
+
+def compute_charges_expectation(qc, regs, shape, statevect, interaction_constant):
+
+    backend = StatevectorSimulator(precision='double')
+    # Links available in lattice of given shape
+    avail_sites = [f'q({ii}, {jj})' for ii in range(shape[0]) for jj in range(shape[1])]
+    num_qubs = qc.num_qubits
+
+    up_hamiltonian = {}
+    for site in avail_sites:
+        global_operator = ['I']*num_qubs
+        if regs[site].is_even:
+            operators =  'Z'+ 'I'*(len(regs[site].map)-1)
+        else:
+            operators =  'IZ'+ 'I'*(len(regs[site].map)-2)
+        for ii, qubit in enumerate(regs[site].qregister):
+            qidx = qc.find_bit(qubit).index
+            global_operator[qidx] = operators[ii]
+        up_hamiltonian[global_operator] = 1
+
+
+    pauli_dict = from_operators_to_pauli_dict(up_hamiltonian)
+    up_hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
+
+    # Remove the ancilla qubit
+    up_hamiltonian_expectation = up_hamiltonian.evaluate_with_statevector(statevect)
+
+    down_hamiltonian = {}
+    for site in avail_sites:
+        global_operator = ['I']*num_qubs
+        if regs[site].is_even:
+            operators =  'IZ'+ 'I'*(len(regs[site].map)-2)
+        else:
+            operators =  'Z'+ 'I'*(len(regs[site].map)-1)
+        for ii, qubit in enumerate(regs[site].qregister):
+            qidx = qc.find_bit(qubit).index
+            global_operator[qidx] = operators[ii]
+        down_hamiltonian[global_operator] = 1
+
+
+    pauli_dict = from_operators_to_pauli_dict(down_hamiltonian)
+    down_hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
+
+    # Remove the ancilla qubit
+    down_hamiltonian_expectation = down_hamiltonian.evaluate_with_statevector(statevect)
+
+    return up_hamiltonian_expectation, down_hamiltonian_expectation
