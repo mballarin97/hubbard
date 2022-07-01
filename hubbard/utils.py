@@ -33,7 +33,7 @@ def hubbard_parser():
     parser.add_argument('--shape', nargs='?', const=(2,2), type=tuple, default=(2,2),
         help='Lattice shape, given as tuple. Default to (2, 2).')
     parser.add_argument('--dt', nargs='?', const=0.01, type=float, default=0.01,
-        help='Duration of a single timestep. Default to 0.1.')
+        help='Duration of a single timestep. Default to 0.01.')
     parser.add_argument('--num_trotter_steps', nargs='?', const=100, type=int, default=100,
         help='Number of trotter steps for the simulation of a single timestep. Default to 100.')
     parser.add_argument('--t', nargs='?', const=1, type=float, default=1,

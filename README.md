@@ -60,7 +60,7 @@ example of the generated output:
 The main executable of the repository is the file `main.py`. It enables the simulation of the Hubbard model using quantum circuits, by varying the onsite term U. It is possible to pass different parameters through command line to customize the simulation:
 
 - `--shape`, Lattice shape, given as tuple. Default to `(2, 2)`. We suggest to use shapes elongated on the $x$ direction due to the way we compute the entanglement.
-- `--dt`, Duration of a single timestep. Default to `0.1`.
+- `--dt`, Duration of a single timestep. Default to `0.01`.
 - `--num_trotter_steps`, Number of trotter steps for the simulation of a single timestep. Default to `100`.
 - `--t`, Hopping constant in the Hamiltonian. Default to `1`.
 - `--U`, Onsite constant constant in the Hamiltonian.
@@ -104,6 +104,7 @@ The script is `plot.py` and takes the following parameters:
 - `plot_index`, a non-optional parameter that identifies the simulation you want to inspect.
 - `--save`, if provided save the results in the `.pdf` format.
 - `--path`, If provided, save in this PATH. Otherwise, save in `data/idx/`.
+- `--no_plot`, If provided, do not call `plt.show()`. Useful for producing plots on clusters.
 
 The plotting procedures are available for the kinetic, charge/spin densities and the entanglement.
 Please feel free to implement plotting of the other quantities in `hubbard/plotter.py`, following

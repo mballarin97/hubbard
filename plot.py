@@ -61,3 +61,7 @@ if __name__ == '__main__':
     # Load and plot entanglement
     entanglement = np.loadtxt(os.path.join(dir_path, 'entanglement.txt' ))
     hplt.plot_entanglement(entanglement, save, save_path)
+
+    # Load and plot ud term
+    ud_term = np.loadtxt(os.path.join(dir_path, 'ud.txt' ))
+    hplt.plot_ud_term(ud_term, sim_params['shape'], save, save_path)
