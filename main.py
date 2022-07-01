@@ -87,8 +87,8 @@ if __name__ == '__main__':
             hopping_constant, site_const, time_step, num_trotter_steps)
         qc.append(evolution_instruction, range(qc.num_qubits))
         # Apply plaquette stabilizer to check if we stay in the right symmetry sector
-        for ii, pp in enumerate(plaquettes):
-            qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
+        #for ii, pp in enumerate(plaquettes):
+        #    qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
 
         # Simulate the circuit
         res = execute(qc, backend=backend )

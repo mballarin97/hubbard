@@ -73,7 +73,7 @@ def generate_global_hopping(qc, regs, link_idx, species, coupling=1):
         qubit = from_site_reg[rr]
         # Keep track of visited qubits to avoid double
         # operations on the shared rishons
-        already_visited.append(qubit)
+        already_visited.append(qubit.register.name)
         # Retrieve the correct index of the qubit
         qidx = qc.find_bit(qubit).index
         for jj in range(2):
@@ -84,7 +84,7 @@ def generate_global_hopping(qc, regs, link_idx, species, coupling=1):
     for ii, rr in enumerate(rishons):
         qubit = to_site_reg[rr]
         # Skip the already visited rishons
-        if qubit in already_visited:
+        if qubit.register.name in already_visited:
             continue
         # Retrieve the correct index of the qubit
         qidx = qc.find_bit(qubit).index

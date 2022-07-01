@@ -22,15 +22,17 @@ if __name__ == '__main__':
 
     print(regs['q(1, 0)']['w'] )
 
-    hop = generate_hopping(regs, (0, 0), 'u')
+    hop = generate_hopping(regs, (0, 1), 'u')
     print(hop)
-    global_hop = generate_global_hopping(qc, regs, (0, 0), 'u')
+    global_hop = generate_global_hopping(qc, regs, (0, 1), 'u')
     global_onsite = generate_global_onsite(qc, regs, (0, 0))
 
-    keys = list(global_hop.keys())
-    os_keys = list(global_onsite.keys())
+    keys = list(global_hop.keys())[::-1]
+    hopping = keys[0][::-1]
+    os_keys = list(global_onsite.keys())[::-1]
+    onsite = os_keys[0][::-1]
     for idx, qq in enumerate(qc.qubits):
-        print(qq, keys[0][idx], keys[1][idx], os_keys[0][idx])
+        print(qq, hopping[idx], onsite[idx])
 
     res = execute(qc, backend=backend )
     results = res.result()
