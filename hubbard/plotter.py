@@ -34,7 +34,7 @@ def plotter_parser():
         help='If provided, save the results')
     parser.add_argument('--path', nargs='?', const=None, type=str, default=None,
         help='If provided, save in this PATH. Otherwise, save in data/idx/.')
-    parser.add_argument('--no_plot', nargs='?', const=False, type=bool, default=True,
+    parser.add_argument('--no_plot', nargs='?', const=True, type=bool, default=False,
         help='If provided, do not plot the results')
 
     return parser
