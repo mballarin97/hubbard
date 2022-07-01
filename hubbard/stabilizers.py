@@ -1,9 +1,22 @@
+# This code is part of hubbard.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+__all__ = ['apply_plaquette_stabilizers', 'apply_vertex_parity_stabilizer']
 
 def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correct=True):
     """
     Apply the stabilizer to a plaquette of the Hubbard defermoinised model,
     recording the result of the projective measurement on a classical
     register
+
+    TODO: THE CONTROLLED Z FROM THE JORDAN-WIGNER ARE NOT IMPLEMENTED
 
     Parameters
     ----------
@@ -65,7 +78,6 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correc
     # Apply cx
     for corner in corner_order:
         for rishon in relative_rishons[corner]:
-            print(corner, rishon, regs[involved_regs[corner]][rishon] )
             qc.cx( ancilla, regs[involved_regs[corner]][rishon] )
 
     # Measure ancilla on x, i.e. hadamard+measure on z

@@ -1,3 +1,13 @@
+# This code is part of hubbard.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
 """
 Write the hubbard operators in pauli strings
 """
@@ -91,3 +101,31 @@ def generate_hopping(regs, link_idx, species):
 
     return operator, (from_site_reg, to_site_reg)
 
+def from_operators_to_pauli_dict(pauli_hamiltonian):
+    """
+    Transform a Hamiltonian described as a dict, where the keys
+    are the pauli strings and the values the coefficients into
+    a pauli dict that can be read by the qiskit class
+    :py:class:`WeightedPauliOperator`.
+
+    Parameters
+    ----------
+    pauli_hamiltonian : dict
+        Pauli hamiltonian. the keys are the pauli strings and
+        the values the coefficients
+
+    Returns
+    -------
+    dict
+        Pauli dict to be used in `WeightedPauliOperator.from_dict`
+    """
+    paulis = []
+    for label, coeff in pauli_hamiltonian.items():
+        paulis += [
+            {
+                "coeff": {"imag": np.imag(coeff), "real": np.real(coeff)},
+                "label": label
+            }
+        ]
+
+    return { 'paulis': paulis }
