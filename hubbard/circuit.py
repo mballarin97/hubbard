@@ -1,5 +1,17 @@
+# This code is part of hubbard.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
 from qiskit import QuantumCircuit
-from .registers import SiteRegister
+from .registers import HubbardRegister
+
+__all__ = ['hubbard_circuit', 'initialize_chessboard']
 
 def hubbard_circuit(shape, ancilla_register, classical_registers):
     """
@@ -24,15 +36,9 @@ def hubbard_circuit(shape, ancilla_register, classical_registers):
         The quantum circuit
     """
 
-    registers = {}
-    reg_for_init = []
-    for ii in range(shape[0]):
-        for jj in range(shape[1]):
-            reg = SiteRegister(ii, jj, shape)
-            registers[reg.name] = reg
-            reg_for_init.append( reg.qregister)
+    registers = HubbardRegister(shape)
 
-    qc = QuantumCircuit(*reg_for_init, ancilla_register, *classical_registers,
+    qc = QuantumCircuit(*registers.qregisters, ancilla_register, *classical_registers,
         name=f'Hubbard {shape}')
 
     return registers, qc
