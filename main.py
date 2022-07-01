@@ -87,16 +87,22 @@ if __name__ == '__main__':
             hopping_constant, site_const, time_step, num_trotter_steps)
         qc.append(evolution_instruction, range(qc.num_qubits))
         # Apply plaquette stabilizer to check if we stay in the right symmetry sector
-        #for ii, pp in enumerate(plaquettes):
-        #    qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
+        if idx > 0:
+            qc_plaquette = QuantumCircuit(*qc.qregs, *qc.cregs)
+            init_func = initialize(qc_plaquette, statevect, range(qc.num_qubits))
+            for ii, pp in enumerate(plaquettes):
+                qc_plaquette = hbb.apply_plaquette_stabilizers(qc_plaquette, regs, qancilla[0], cancillas[ii], pp )
+            res = execute(qc_plaquette, backend=backend )
+            results = res.result()
+            counts = results.get_counts()
 
         # Simulate the circuit
         res = execute(qc, backend=backend )
         results = res.result()
         statevect = results.get_statevector(qc)
-        counts = results.get_counts()
 
-        symmetry_check[idx, :] = list( list(counts.keys())[0] )
+        if idx>0:
+            symmetry_check[idx, :] = list( list(counts.keys())[0] )
         kinetic_exps[idx] = obs.compute_kinetic_expectation(qc, regs, shape, statevect, 1)
         u_and_d_exps[idx, :] = obs.compute_up_and_down_expectation(qc, regs, statevect)
         ud_exps[idx, :] = obs.compute_updown_expectation(qc, regs, statevect)
