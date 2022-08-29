@@ -32,12 +32,12 @@ if __name__ == '__main__':
         for specie in ('u', 'd'):
             hop_term = generate_global_hopping(qc, regs, link_idx, specie, 1)
             hubbard_hamiltonian.update(hop_term)
-    
+
      # From dictionary to qiskit pauli_dict
     pauli_dict = from_operators_to_pauli_dict(hubbard_hamiltonian)
     hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
 
-    pauli_dict = from_operators_to_pauli_dict({'IIIIIIIIIXXXX' : 1})
+    pauli_dict = from_operators_to_pauli_dict({'IIIIIIIIIXYYX' : 1})
     stabilizer = WeightedPauliOperator.from_dict(pauli_dict)
 
     print('Hopping term of the hamiltonian:')

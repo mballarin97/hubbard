@@ -58,8 +58,8 @@ def generate_hopping(regs, link_idx, species):
     from_site_list = np.array(['I' for _ in from_site_reg.map])
     to_site_list = np.array(['I' for _ in to_site_reg.map])
 
-    from_site_list[ from_site_reg.map[species] ] = 'Y'
-    to_site_list[ to_site_reg.map[species] ] = 'X'
+    from_site_list[ from_site_reg.map[species] ] = 'X'
+    to_site_list[ to_site_reg.map[species] ] = 'Y'
 
     # Check which type of hopping it is
     # Hopping on x axis
@@ -83,6 +83,10 @@ def generate_hopping(regs, link_idx, species):
             from_rishon = 's'
             to_rishon = 'n'
 
+    # In the following we put an X on from/to_rishon even though the correct general
+    # term has a Y. This is because a YY interaction is mapped into an X interaction
+    # when we reduce the mapping. Thus, for the correct functioning of the simulation
+    # we already put the reduced X
     from_site_list[from_site_reg.map[species]+1:from_site_reg.map[from_rishon]] = 'Z'
     from_site_list[from_site_reg.map[from_rishon]] = 'X'
 
@@ -94,10 +98,10 @@ def generate_hopping(regs, link_idx, species):
 
     # Add the hermitian conjugate
     herm_conj = deepcopy(operator)
-    herm_conj[from_site_reg.map[species]] = 'X'
-    herm_conj[len(from_site_list) + to_site_reg.map[species]+1] = 'Y'
+    herm_conj[from_site_reg.map[species]] = 'Y'
+    herm_conj[len(from_site_list) + to_site_reg.map[species]+1] = 'X'
 
-    operator = { ''.join(operator) : 0.5, ''.join(herm_conj) : -0.5 }
+    operator = { ''.join(operator) : 0.5j, ''.join(herm_conj) : -0.5j }
 
     return operator, (from_site_reg, to_site_reg)
 
