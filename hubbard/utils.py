@@ -38,11 +38,15 @@ def hubbard_parser():
         help='Number of trotter steps for the simulation of a single timestep. Default to 100.')
     parser.add_argument('--t', nargs='?', const=1, type=float, default=1,
         help='Hopping constant in the Hamiltonian. Default to 1.')
-    parser.add_argument('--U', nargs='?', const=[-8, -1/8, 100], default=[-8, -1/8, 100],
-        help="""Onsite constant constant in the Hamiltonian. If a list is provided,
-            the onsite constant is generated as np.linspace(U[0], U[1], U[2]), so as
-            [low, high, num_steps]. If a string is provided, it should be the PATH to
-            the file containing the values. Default to [-8, -1/8, 100]""")
+    parser.add_argument('--Umin', nargs='?', const=-8, default=-8,
+        help="""Minimum value of the onsite constant constant in the Hamiltonian.""")
+    parser.add_argument('--Umax', nargs='?', const=-1/8, default=-1/8,
+        help="""Maximum value of the onsite constant constant in the Hamiltonian.""")
+    parser.add_argument('--Ustep', nargs='?', const=True, default=False,
+        help="""If provided, the change from Umax to Umin is a quench at 1/10 of the
+            total simulation time.""")
+    parser.add_argument('--num_timesteps', nargs='?', const=-8, default=-8,
+        help="""Total number of timesteps in the simulation.""")
 
     return parser
 

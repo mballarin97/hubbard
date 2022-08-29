@@ -35,10 +35,12 @@ if __name__ == '__main__':
     # Hopping constant, usually called J or t
     hopping_constant = args.t
     # Onsite constant, usually called U
-    if isinstance(args.U, list):
-        onsite_constant = np.linspace(args.U[0], args.U[1], args.U[2])
-    elif isinstance(args.U, str):
-        onsite_constant = np.loadtxt(args.U)
+    if args.Ustep:
+        onsite_constant = np.linspace(args.Umin, args.Umax, args.num_timesteps)
+    else:
+        first_evol = int(args.num_timesteps/10)
+        onsite_constant = np.array( [args.Umin]*first_evol +
+                            [args.Umax]*(args.num_timesteps-first_evol) )
     # Number of steps in the evolution
     evolution_steps = len(onsite_constant)
     parameters_dict = vars(args)
@@ -86,23 +88,18 @@ if __name__ == '__main__':
         evolution_instruction = hbb.evolution_operation(qc, regs, shape,
             hopping_constant, site_const, time_step, num_trotter_steps)
         qc.append(evolution_instruction, range(qc.num_qubits))
+
         # Apply plaquette stabilizer to check if we stay in the right symmetry sector
-        if idx > 0:
-            qc_plaquette = QuantumCircuit(*qc.qregs, *qc.cregs)
-            init_func = initialize(qc_plaquette, statevect, range(qc.num_qubits))
-            for ii, pp in enumerate(plaquettes):
-                qc_plaquette = hbb.apply_plaquette_stabilizers(qc_plaquette, regs, qancilla[0], cancillas[ii], pp )
-            res = execute(qc_plaquette, backend=backend )
-            results = res.result()
-            counts = results.get_counts()
+        for ii, pp in enumerate(plaquettes):
+            qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
 
         # Simulate the circuit
         res = execute(qc, backend=backend )
         results = res.result()
         statevect = results.get_statevector(qc)
+        counts = results.get_counts()
 
-        if idx>0:
-            symmetry_check[idx, :] = list( list(counts.keys())[0] )
+        symmetry_check[idx, :] = list( list(counts.keys())[0] )
         kinetic_exps[idx] = obs.compute_kinetic_expectation(qc, regs, shape, statevect, 1)
         u_and_d_exps[idx, :] = obs.compute_up_and_down_expectation(qc, regs, statevect)
         ud_exps[idx, :] = obs.compute_updown_expectation(qc, regs, statevect)
