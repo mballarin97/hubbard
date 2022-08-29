@@ -101,7 +101,7 @@ def generate_hopping(regs, link_idx, species):
     herm_conj[from_site_reg.map[species]] = 'Y'
     herm_conj[len(from_site_list) + to_site_reg.map[species]+1] = 'X'
 
-    operator = { ''.join(operator) : 0.5j, ''.join(herm_conj) : -0.5j }
+    operator = { ''.join(operator) : 0.5, ''.join(herm_conj) : -0.5 }
 
     return operator, (from_site_reg, to_site_reg)
 
