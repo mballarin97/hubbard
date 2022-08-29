@@ -200,7 +200,7 @@ def plot_ud_term(ud_term, shape, save=False, path='', plot=True):
         ax.plot(rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
     ax.legend()
     ax.set_xlabel('Time', fontsize=14)
-    ax.set_ylabel(r'Joint expectation \langle n_{\uparrow}n_{\downarrow}\rangle', fontsize=14)
+    ax.set_ylabel(r'Joint expectation $\langle n_{\uparrow}n_{\downarrow}\rangle$', fontsize=14)
     #ax.set_yscale('log')
 
     plt.grid()
