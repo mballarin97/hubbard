@@ -164,7 +164,7 @@ def compute_updown_expectation(qc, regs, statevect):
 
     return hamiltonian_exp
 
-def compute_entanglement(qc, regs, shape, statevect):
+def compute_half_entanglement(qc, regs, shape, statevect, base2=True):
     """
     Compute the entanglement by cutting in half
     VERTICALLY the system
@@ -180,6 +180,8 @@ def compute_entanglement(qc, regs, shape, statevect):
     statevect : StateVector
         Statevector describing the quantum state over which we want to measure
         the observable
+    base2 : bool, optional
+        If true, compute the base2 entropy. Default to True
 
     Returns
     -------
@@ -218,5 +220,50 @@ def compute_entanglement(qc, regs, shape, statevect):
     idxs = np.unique(idxs)
 
     entropy = entanglement_entropy(statevect.data, idxs)
+    if base2:
+        entropy /= np.log2(np.e)
+
+    return entropy
+
+def compute_links_matter_entanglement(qc, regs, shape, statevect, base2=True):
+    """
+    Compute the entanglement between links and matter
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        Quantum circuit describing the Hubbard model
+    regs : HubbardRegister
+        HubbardRegister of the simulation
+    shape : tuple
+        Shape of the lattice
+    statevect : StateVector
+        Statevector describing the quantum state over which we want to measure
+        the observable
+    base2 : bool, optional
+        If true, compute the base2 entropy. Default to True
+
+    Returns
+    -------
+    float
+        Expectation value of the Von Neumann entanglement entropy
+    """
+
+    # Cut in half by splitting diagonally on the links,
+    # i.e. one rishon link on the left and one on the right
+    idxs = []
+    for site in regs.values():
+        rishons = list( site._keys )
+        for mm in rishons:
+            qubit = site[mm]
+            qidx = qc.find_bit(qubit).index
+            idxs.append(qidx)
+
+        # Remove double occurrences
+    idxs = np.unique(idxs)
+
+    entropy = entanglement_entropy(statevect.data, idxs)
+    if base2:
+        entropy /= np.log2(np.e)
 
     return entropy

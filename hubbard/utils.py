@@ -396,6 +396,8 @@ def write_json(dictionary, fh):
     for key, value in dictionary.items():
         if isinstance(value, tuple) or isinstance(value, np.ndarray):
             value = list(value)
+        elif isinstance(value, bool):
+            value = f"\"{value}\""
         string += f'\t\"{key}\": {value},\n'
     string = string[:-2] + '\n}'
     fh.write(string)
