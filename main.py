@@ -35,12 +35,12 @@ if __name__ == '__main__':
     # Hopping constant, usually called J or t
     hopping_constant = args.t
     # Onsite constant, usually called U
-    if args.Ustep:
-        onsite_constant = np.linspace(args.Umin, args.Umax, args.num_timesteps)
+    if int(args.Ustep):
+        onsite_constant = np.linspace(int(args.Umin), int(args.Umax), int(args.num_timesteps))
     else:
-        first_evol = int(args.num_timesteps/10)
-        onsite_constant = np.array( [args.Umin]*first_evol +
-                            [args.Umax]*(args.num_timesteps-first_evol) )
+        first_evol = int(int(args.num_timesteps)/10)
+        onsite_constant = [-8]*800 #np.array( [args.Umin]*first_evol +
+                            #[args.Umax]*(int(args.num_timesteps)-first_evol) )
     # Number of steps in the evolution
     evolution_steps = len(onsite_constant)
     parameters_dict = vars(args)
