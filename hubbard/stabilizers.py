@@ -62,9 +62,9 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correc
     # Relative rishons contains the rishons used in the stabilizer
     # based on the corner of the site
     relative_rishons = {
-        'bl' : ['n', 'e'],
-        'ul' : ['e'],
-        'br' : ['n'],
+        'bl' : [],
+        'ul' : ['s', 'e'],
+        'br' : ['n', 'w'],
         'ur' : [],
     }
     # Site registers that forms the plaquette
@@ -75,10 +75,18 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correc
     # Apply hadamard to the ancilla
     qc.h( ancilla )
 
-    # Apply cx
+    # Apply cx and cy
     for corner in corner_order:
         for rishon in relative_rishons[corner]:
-            qc.cx( ancilla, regs[involved_regs[corner]][rishon] )
+            if corner == 'br':
+                qc.cx( ancilla, regs[involved_regs[corner]][rishon] )
+            elif corner == 'ul':
+                qc.cy( ancilla, regs[involved_regs[corner]][rishon] )
+
+    # Apply cz if qubits are available
+    for rishon in ('n', 'w'):
+        if rishon in regs[involved_regs['ul']]:
+            qc.cz( ancilla, regs[involved_regs['ul']][rishon] )
 
     # Measure ancilla on x, i.e. hadamard+measure on z
     qc.h(ancilla)
