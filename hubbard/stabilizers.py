@@ -104,7 +104,7 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correc
 
 def apply_vertex_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx, correct=True):
     """
-    Apply the parity stabilizer to the matter inside a site of the
+    Apply the parity stabilizer to the matter and the link inside a site of the
     Hubbard defermoinised model, recording the result of the projective
     measurement on a classical register.
 
@@ -146,7 +146,7 @@ def apply_vertex_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx, correct=
     site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]})' ]
 
     # Apply controlled x for checking the parity of a site
-    for matter in ('u', 'd'):
+    for matter in site_reg._keys:
         qc.cx(site_reg[matter], ancilla)
 
     # Apply projective measurement

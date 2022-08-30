@@ -39,7 +39,24 @@ def plotter_parser():
 
     return parser
 
-def plot_kinetic_term(kinetic_exp, save=False, path='', plot=True):
+def plot_divider(ax, xx, yy):
+    """
+    Plot the vertical line that divides one region
+    of the onsite potential U from the other
+
+    Parameters
+    ----------
+    ax : matplotlib axis
+        Axis of the image
+    xx : array-like
+        x coordinate of the image
+    yy : array-like
+        y coordinate of the image
+    """
+    ax.axvline( (max(xx)-min(xx))/10, color='red',
+                linestyle='dashed', label='Change of $U$' )
+
+def plot_kinetic_term(kinetic_exp, params, save=False, path='', plot=True):
     """
     Plot the kinetic term
 
@@ -47,6 +64,8 @@ def plot_kinetic_term(kinetic_exp, save=False, path='', plot=True):
     ----------
     kinetic_exp : np.ndarray
         Kinetic term expectation value
+    params : dict
+        Simulation params dict
     save : bool, optional
         If True, save the pdf file, by default False
     path ; str, optional
@@ -55,9 +74,14 @@ def plot_kinetic_term(kinetic_exp, save=False, path='', plot=True):
         If True, use plt.show(). Default to True.
     """
     _, ax = plt.subplots(figsize=(8, 6))
+    timestep = params['dt']
+    hopping = params['t']
+    num_timesteps = params['num_timesteps']
+    time = np.arange(num_timesteps)*timestep/hopping
 
-    ax.plot(kinetic_exp, 'o--', color='navy')
-    ax.set_xlabel('Time', fontsize=14)
+    ax.plot(time, kinetic_exp, 'o--', color='navy')
+    if params['Ustep']: plot_divider(ax, time, kinetic_exp)
+    ax.set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
     ax.set_ylabel(r'Kinetic term $\sum_{\langle ij\rangle}\langle \psi |Re( c^\dagger_{ij} c_{ij})|\psi\rangle $', fontsize=14)
     #ax.set_yscale('log')
 
@@ -68,7 +92,7 @@ def plot_kinetic_term(kinetic_exp, save=False, path='', plot=True):
     if plot:
         plt.show()
 
-def plot_u_and_d_term(u_and_d, shape, save=False, path='', plot=True):
+def plot_u_and_d_term(u_and_d, params, save=False, path='', plot=True):
     """
     Plot the charge and spin densities
 
@@ -76,6 +100,8 @@ def plot_u_and_d_term(u_and_d, shape, save=False, path='', plot=True):
     ----------
     u_and_d : np.ndarray
         u_and_d term expectation value
+    params : dict
+        Simulation params dict
     save : bool, optional
         If True, save the pdf file, by default False
     path ; str, optional
@@ -84,10 +110,15 @@ def plot_u_and_d_term(u_and_d, shape, save=False, path='', plot=True):
         If True, use plt.show(). Default to True.
     """
     u_and_d = (-u_and_d+1)/2
+    shape = params['shape']
     total_sites = np.prod(shape)
     rho_charge = u_and_d[:, :total_sites] + u_and_d[:, total_sites:]
     rho_spin = u_and_d[:, :total_sites] - u_and_d[:, total_sites:]
     sites = [f'({ii}, {jj})' for ii in range(shape[0]) for jj in range(shape[1])]
+    timestep = params['dt']
+    hopping = params['t']
+    num_timesteps = params['num_timesteps']
+    time = np.arange(num_timesteps)*timestep/hopping
 
     ###################################################
     # Plotting The full evolution with imshow
@@ -98,11 +129,11 @@ def plot_u_and_d_term(u_and_d, shape, save=False, path='', plot=True):
     maxmax = np.max([np.max(rho_charge), np.max(rho_spin)])
 
     ax[0].set_title(r'Charge density $\rho_{c}=\langle n_{\uparrow}\rangle +\langle n_{\downarrow}\rangle$')
-    im = ax[0].imshow(rho_charge, vmin=minmin, vmax=maxmax, aspect='auto')
-    ax[0].set_ylabel('Time')
+    im = ax[0].imshow(rho_charge, vmin=minmin, vmax=maxmax, aspect='auto', extent=[0, 3, max(time), min(time)])
+    ax[0].set_ylabel(r'Time $\frac{{timestep}}{t}$')
 
     ax[1].set_title(r'Spin density $\rho_{s}=\langle n_{\uparrow}\rangle -\langle n_{\downarrow}\rangle$')
-    _ = ax[1].imshow(rho_spin, vmin=minmin, vmax=maxmax, aspect='auto')
+    _ = ax[1].imshow(rho_spin, vmin=minmin, vmax=maxmax, aspect='auto', extent=[0, 3, max(time), min(time)])
 
 
     for ii in range(2):
@@ -126,18 +157,20 @@ def plot_u_and_d_term(u_and_d, shape, save=False, path='', plot=True):
 
     colors = matplotlib.cm.get_cmap('Dark2')
     ax[0].set_ylabel(r'Charge density $\rho_{c}=\langle n_{\uparrow}\rangle +\langle n_{\downarrow}\rangle$')
-    ax[0].set_xlabel('Time')
+    ax[0].set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
 
     markers = list(Line2D.markers.keys())
     for ii, rho in enumerate(rho_charge.T):
-        ax[0].plot(rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
+        ax[0].plot(time, rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
+    if params['Ustep']: plot_divider(ax[0], time, rho)
     ax[0].legend()
 
     ax[1].set_ylabel(r'Spin density $\rho_{s}=\langle n_{\uparrow}\rangle -\langle n_{\downarrow}\rangle$')
-    ax[1].set_xlabel('Time')
+    ax[1].set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
 
     for ii, rho in enumerate(rho_spin.T):
-        ax[1].plot(rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
+        ax[1].plot(time, rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
+    if params['Ustep']: plot_divider(ax[1], time, rho)
     ax[1].legend()
 
     plt.tight_layout()
@@ -146,7 +179,7 @@ def plot_u_and_d_term(u_and_d, shape, save=False, path='', plot=True):
     if plot:
         plt.show()
 
-def plot_entanglement(entanglement, save=False, path='', plot=True):
+def plot_half_entanglement(entanglement, params, save=False, path='', plot=True):
     """
     Plot the entanglement term
 
@@ -154,6 +187,8 @@ def plot_entanglement(entanglement, save=False, path='', plot=True):
     ----------
     kinetic_exp : np.ndarray
         Kinetic term expectation value
+    params : dict
+        Simulation params dict
     save : bool, optional
         If True, save the pdf file, by default False
     path ; str, optional
@@ -162,20 +197,61 @@ def plot_entanglement(entanglement, save=False, path='', plot=True):
         If True, use plt.show(). Default to True.
     """
     _, ax = plt.subplots(figsize=(8, 6))
+    timestep = params['dt']
+    hopping = params['t']
+    num_timesteps = params['num_timesteps']
+    time = np.arange(num_timesteps)*timestep/hopping
 
-    ax.plot(entanglement, 'o--', color='forestgreen')
-    ax.set_xlabel('Time', fontsize=14)
+    ax.plot(time, entanglement, 'o--', color='forestgreen')
+    if params['Ustep']: plot_divider(ax, time, entanglement)
+    ax.set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
     ax.set_ylabel(r'Von Neumann entropy cutting in half the system $S_V$', fontsize=14)
     #ax.set_yscale('log')
 
     plt.grid()
     plt.tight_layout()
     if save:
-        plt.savefig(os.path.join(path, 'entanglement.pdf'), format='pdf')
+        plt.savefig(os.path.join(path, 'entanglement_half.pdf'), format='pdf')
     if plot:
         plt.show()
 
-def plot_ud_term(ud_term, shape, save=False, path='', plot=True):
+def plot_matter_link_entanglement(entanglement, params, save=False, path='', plot=True):
+    """
+    Plot the entanglement term
+
+    Parameters
+    ----------
+    kinetic_exp : np.ndarray
+        Kinetic term expectation value
+    params : dict
+        Simulation params dict
+    save : bool, optional
+        If True, save the pdf file, by default False
+    path ; str, optional
+        PATH where to save the file
+    plot : bool, optional
+        If True, use plt.show(). Default to True.
+    """
+    _, ax = plt.subplots(figsize=(8, 6))
+    timestep = params['dt']
+    hopping = params['t']
+    num_timesteps = params['num_timesteps']
+    time = np.arange(num_timesteps)*timestep/hopping
+
+    ax.plot(time, entanglement, 'o--', color='forestgreen')
+    if params['Ustep']: plot_divider(ax, time, entanglement)
+    ax.set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
+    ax.set_ylabel(r'Von Neumann entropy cutting matter and links $S_V$', fontsize=14)
+    #ax.set_yscale('log')
+
+    plt.grid()
+    plt.tight_layout()
+    if save:
+        plt.savefig(os.path.join(path, 'entanglement_matter_link.pdf'), format='pdf')
+    if plot:
+        plt.show()
+
+def plot_ud_term(ud_term, params, save=False, path='', plot=True):
     """
     Plot the charge and spin densities
 
@@ -183,6 +259,8 @@ def plot_ud_term(ud_term, shape, save=False, path='', plot=True):
     ----------
     ud_term : np.ndarray
         ud term expectation value
+    params : dict
+        Simulation params dict
     save : bool, optional
         If True, save the pdf file, by default False
     path ; str, optional
@@ -190,16 +268,22 @@ def plot_ud_term(ud_term, shape, save=False, path='', plot=True):
     plot : bool, optional
         If True, use plt.show(). Default to True.
     """
+    shape = params['shape']
     sites = [f'({ii}, {jj})' for ii in range(shape[0]) for jj in range(shape[1])]
+    timestep = params['dt']
+    hopping = params['t']
+    num_timesteps = params['num_timesteps']
+    time = np.arange(num_timesteps)*timestep/hopping
 
     _, ax = plt.subplots(figsize=(8, 6))
 
     colors = matplotlib.cm.get_cmap('Dark2')
     markers = list(Line2D.markers.keys())
     for ii, rho in enumerate(ud_term.T):
-        ax.plot(rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
+        ax.plot(time, rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
+    if params['Ustep']: plot_divider(ax, time, rho)
     ax.legend()
-    ax.set_xlabel('Time', fontsize=14)
+    ax.set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
     ax.set_ylabel(r'Joint expectation $\langle n_{\uparrow}n_{\downarrow}\rangle$', fontsize=14)
     #ax.set_yscale('log')
 

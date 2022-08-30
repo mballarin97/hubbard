@@ -191,7 +191,7 @@ def compute_half_entanglement(qc, regs, shape, statevect, base2=True):
 
     # Cut in half by splitting diagonally on the links,
     # i.e. one rishon link on the left and one on the right
-    idxs = []
+    idxs = [qc.num_qubits-1] # We already put in the ancilla
     cut_on = shape[1]//2
     for site in regs.values():
         rishons = list( site._keys )
@@ -221,7 +221,7 @@ def compute_half_entanglement(qc, regs, shape, statevect, base2=True):
 
     entropy = entanglement_entropy(statevect.data, idxs)
     if base2:
-        entropy /= np.log2(np.e)
+        entropy *= np.log2(np.e)
 
     return entropy
 
@@ -251,19 +251,17 @@ def compute_links_matter_entanglement(qc, regs, shape, statevect, base2=True):
 
     # Cut in half by splitting diagonally on the links,
     # i.e. one rishon link on the left and one on the right
-    idxs = []
+    idxs = [qc.num_qubits-1] # We already put in the ancilla
     for site in regs.values():
-        rishons = list( site._keys )
-        for mm in rishons:
+        for mm in ('u', 'd'):
             qubit = site[mm]
             qidx = qc.find_bit(qubit).index
             idxs.append(qidx)
 
-        # Remove double occurrences
-    idxs = np.unique(idxs)
+    idxs = np.sort(idxs)
 
     entropy = entanglement_entropy(statevect.data, idxs)
     if base2:
-        entropy /= np.log2(np.e)
+        entropy *= np.log2(np.e)
 
     return entropy

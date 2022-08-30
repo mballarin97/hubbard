@@ -38,15 +38,43 @@ if __name__ == '__main__':
     hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
 
     pauli_dict = from_operators_to_pauli_dict({'IIIIIIIIIXYYX' : 1})
-    stabilizer = WeightedPauliOperator.from_dict(pauli_dict)
+    p_stabilizer = WeightedPauliOperator.from_dict(pauli_dict)
 
     print('Hopping term of the hamiltonian:')
     print(hamiltonian.print_details())
 
+    print('')
+    print('===================================')
+    print('==== PLAQUETTE STABILIZER TERM ====')
+    print('===================================')
+
     print('Stabilizer term')
-    print(stabilizer.print_details())
+    print(p_stabilizer.print_details())
 
-    print('The hamiltonian and the stabilizers commute:', hamiltonian.commute_with(stabilizer) )
+    print('The hamiltonian and the plaquette stabilizers commute:',
+            hamiltonian.commute_with(p_stabilizer) )
     print('Commutator term')
-    print(commutator(hamiltonian, stabilizer).print_details() )
+    print(commutator(hamiltonian, p_stabilizer).print_details() )
 
+    print('')
+    print('================================')
+    print('==== VERTEX STABILIZER TERM ====')
+    print('================================')
+
+    # Generate stabilizers on the vertexes
+    for name, site in regs.items():
+        stabilizer = list('I'*qc.num_qubits)
+        for mm in site._keys:
+            qubit = site[mm]
+            qidx = qc.find_bit(qubit).index
+            stabilizer[qidx] = 'Z'
+        stab_id = ''.join(stabilizer[::-1])
+        pauli_dict = from_operators_to_pauli_dict({ stab_id : 1})
+        stabilizer = WeightedPauliOperator.from_dict(pauli_dict)
+
+        # Check commutators on vertexes
+        print(f'Stabilizer {stab_id} term on site {name}')
+        print('The hamiltonian and the vertex stabilizers commute:', hamiltonian.commute_with(stabilizer) )
+        print('The plaquette stabilizer and the vertex stabilizers commute:',
+                p_stabilizer.commute_with(stabilizer) )
+        print('')

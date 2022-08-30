@@ -41,6 +41,10 @@ if __name__ == '__main__':
     with open(os.path.join(dir_path,'params.json' ), 'r') as fh:
         sim_params = json.load(fh)
 
+    print('============ SIMULATION PARAMETERS ============')
+    for key, val in sim_params.items():
+        print(f'\t {key} : {val}')
+
     # First, check that the simulation makes sense through the
     # symmetry checks
     symmetry_checks = np.loadtxt(os.path.join(dir_path, 'symmetry_check.txt' ))
@@ -57,16 +61,20 @@ if __name__ == '__main__':
 
     # Load and plot kinetic term
     kinetic = np.loadtxt(os.path.join(dir_path, 'kinetic.txt' ))
-    hplt.plot_kinetic_term(kinetic, save, save_path, plot)
+    hplt.plot_kinetic_term(kinetic, sim_params, save, save_path, plot)
 
     # Load and plot charge and spin density
     up_and_down = np.loadtxt(os.path.join(dir_path, 'u_and_d.txt' ))
-    hplt.plot_u_and_d_term(up_and_down, sim_params['shape'], save, save_path, plot)
+    hplt.plot_u_and_d_term(up_and_down, sim_params, save, save_path, plot)
 
-    # Load and plot entanglement
-    entanglement = np.loadtxt(os.path.join(dir_path, 'entanglement.txt' ))
-    hplt.plot_entanglement(entanglement, save, save_path, plot)
+    # Load and plot entanglement of half tghe system
+    entanglement = np.loadtxt(os.path.join(dir_path, 'entanglement_half.txt' ))
+    hplt.plot_half_entanglement(entanglement, sim_params, save, save_path, plot)
+
+    # Load and plot entanglement between links and matter
+    entanglement = np.loadtxt(os.path.join(dir_path, 'entanglement_matter_link.txt' ))
+    hplt.plot_matter_link_entanglement(entanglement, sim_params, save, save_path, plot)
 
     # Load and plot ud term
     ud_term = np.loadtxt(os.path.join(dir_path, 'ud.txt' ))
-    hplt.plot_ud_term(ud_term, sim_params['shape'], save, save_path, plot)
+    hplt.plot_ud_term(ud_term, sim_params, save, save_path, plot)

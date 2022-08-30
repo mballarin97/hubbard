@@ -34,8 +34,8 @@ def hubbard_parser():
         help='Lattice shape, given as tuple. Default to (2, 2).')
     parser.add_argument('--dt', nargs='?', const=0.01, type=float, default=0.01,
         help='Duration of a single timestep. Default to 0.01.')
-    parser.add_argument('--num_trotter_steps', nargs='?', const=100, type=int, default=100,
-        help='Number of trotter steps for the simulation of a single timestep. Default to 100.')
+    parser.add_argument('--num_trotter_steps', nargs='?', const=10, type=int, default=10,
+        help='Number of trotter steps for the simulation of a single timestep. Default to 10.')
     parser.add_argument('--t', nargs='?', const=1, type=float, default=1,
         help='Hopping constant in the Hamiltonian. Default to 1.')
     parser.add_argument('--Umin', nargs='?', const=-8, default=-8,
@@ -47,6 +47,8 @@ def hubbard_parser():
             total simulation time.""")
     parser.add_argument('--num_timesteps', nargs='?', const=-8, default=-8,
         help="""Total number of timesteps in the simulation.""")
+    parser.add_argument('--clear', nargs='?', const=True, default=False,
+        help="""Delete the data folder and return""")
 
     return parser
 
