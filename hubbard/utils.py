@@ -30,7 +30,7 @@ def hubbard_parser():
         the kinetic operator, the charges, the entanglement, the plaquette stabilizers and
         the correlation between the occupation of up and down in a site.
         """)
-    parser.add_argument('--shape', nargs='?', const=(2,2), type=tuple, default=(2,2),
+    parser.add_argument('--shape', nargs='+', default=(2,2), type=int,
         help='Lattice shape, given as tuple. Default to (2, 2).')
     parser.add_argument('--dt', nargs='?', const=0.01, type=float, default=0.01,
         help='Duration of a single timestep. Default to 0.01.')

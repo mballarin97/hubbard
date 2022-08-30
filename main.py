@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     # ============= Initialize parameters of the simulation =============
     # Shape of the lattice
-    shape = args.shape
+    shape = (int(args.shape[0]), int(args.shape[1]) )
     # Timestep of the evolution
     time_step = float(args.dt)
     # Number of trotterization steps for the single timestep
