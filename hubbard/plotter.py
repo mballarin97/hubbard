@@ -129,16 +129,16 @@ def plot_u_and_d_term(u_and_d, params, save=False, path='', plot=True):
     maxmax = np.max([np.max(rho_charge), np.max(rho_spin)])
 
     ax[0].set_title(r'Charge density $\rho_{c}=\langle n_{\uparrow}\rangle +\langle n_{\downarrow}\rangle$')
-    im = ax[0].imshow(rho_charge, vmin=minmin, vmax=maxmax, aspect='auto', extent=[0, 3, max(time), min(time)])
+    im = ax[0].imshow(rho_charge, vmin=minmin, vmax=maxmax, aspect='auto', extent=[0, len(sites)-1, max(time), min(time)])
     ax[0].set_ylabel(r'Time $\frac{{timestep}}{t}$')
 
     ax[1].set_title(r'Spin density $\rho_{s}=\langle n_{\uparrow}\rangle -\langle n_{\downarrow}\rangle$')
-    _ = ax[1].imshow(rho_spin, vmin=minmin, vmax=maxmax, aspect='auto', extent=[0, 3, max(time), min(time)])
+    _ = ax[1].imshow(rho_spin, vmin=minmin, vmax=maxmax, aspect='auto', extent=[0, len(sites)-1, max(time), min(time)])
 
 
     for ii in range(2):
         ax[ii].set_xlabel('Site')
-        ax[ii].set_xticks(np.arange(0, 4))
+        ax[ii].set_xticks(np.arange(0, len(sites)))
         ax[ii].set_xticklabels(sites)
 
     # add space for colour bar

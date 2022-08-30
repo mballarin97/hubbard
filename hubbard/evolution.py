@@ -8,11 +8,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from qiskit import QuantumCircuit
 from qiskit.aqua.operators import WeightedPauliOperator
 import numpy as np
 from .operators import generate_hopping, from_operators_to_pauli_dict
 
-__all__ = ['evolution_operation']
+__all__ = ['evolution_operation', 'insert_noise']
 
 def generate_global_hopping(qc, regs, link_idx, species, coupling=1):
     """
@@ -212,3 +213,37 @@ def evolution_operation(qc, regs, shape,
         expansion_order=2, num_time_slices=num_trotter_steps)
 
     return evolution_instruction
+
+def insert_noise(qc, gates, probs, noisy_gates = None):
+    """
+    After each gate inside noisy_gates apply an error gate,
+    like X, Z or Y with a given probability
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        circuit where to inject noise
+    gates : array-like of gates
+        Noise gates
+    probs : array-like of float
+        Probability of applying the gate
+    noisy_gates : array-like of str, optional
+        Gates after which there is a probability of
+        applying the noise
+    """
+    if noisy_gates is None:
+        return qc
+
+    gates = np.array(gates, dtype=object)
+    probs = np.array(probs)
+    noisy_qc = QuantumCircuit(*qc.qregs, *qc.cregs)
+    for instruction in qc:
+        noisy_qc.append(*instruction)
+        if instruction[0].name in noisy_gates:
+            rand_u = np.random.uniform(0, 1, len(probs))
+            gates_to_apply = gates[rand_u<probs]
+            for gate in gates_to_apply:
+                site = np.random.choice(instruction[1])
+                noisy_qc.append(gate, [site] )
+
+    return noisy_qc

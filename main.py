@@ -54,6 +54,8 @@ if __name__ == '__main__':
     # If True, apply stabilizers at each timestep
     apply_stabilizers = False
 
+    # Vertexes definition
+    vertexes = [(ii, jj) for ii in range(shape[0]) for jj in range(shape[1])]
     # Plaquettes definition
     plaquettes = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]-1) ]
 
@@ -104,6 +106,8 @@ if __name__ == '__main__':
         if apply_stabilizers:
             for ii, pp in enumerate(plaquettes):
                 qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
+            for ii, vv in enumerate(vertexes):
+                qc = hbb.apply_vertex_parity_stabilizer(qc, regs, qancilla, cancillas[ii], vv )
 
         # Simulate the circuit
         res = execute(qc, backend=backend )
