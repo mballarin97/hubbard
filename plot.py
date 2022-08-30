@@ -43,7 +43,9 @@ if __name__ == '__main__':
 
     print('============ SIMULATION PARAMETERS ============')
     for key, val in sim_params.items():
-        print(f'\t {key} : {val}')
+        if key != 'U':
+            print(f'\t {key} : {val}')
+    sim_params['Ustep'] = sim_params['Ustep'] == "True"
 
     # First, check that the simulation makes sense through the
     # symmetry checks

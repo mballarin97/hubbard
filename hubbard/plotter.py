@@ -80,7 +80,7 @@ def plot_kinetic_term(kinetic_exp, params, save=False, path='', plot=True):
     time = np.arange(num_timesteps)*timestep/hopping
 
     ax.plot(time, kinetic_exp, 'o--', color='navy')
-    if params['Ustep']: plot_divider(ax, time, kinetic_exp)
+    if bool(params['Ustep']): plot_divider(ax, time, kinetic_exp)
     ax.set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
     ax.set_ylabel(r'Kinetic term $\sum_{\langle ij\rangle}\langle \psi |Re( c^\dagger_{ij} c_{ij})|\psi\rangle $', fontsize=14)
     #ax.set_yscale('log')
@@ -162,7 +162,7 @@ def plot_u_and_d_term(u_and_d, params, save=False, path='', plot=True):
     markers = list(Line2D.markers.keys())
     for ii, rho in enumerate(rho_charge.T):
         ax[0].plot(time, rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
-    if params['Ustep']: plot_divider(ax[0], time, rho)
+    if bool(params['Ustep']): plot_divider(ax[0], time, rho)
     ax[0].legend()
 
     ax[1].set_ylabel(r'Spin density $\rho_{s}=\langle n_{\uparrow}\rangle -\langle n_{\downarrow}\rangle$')
@@ -170,7 +170,7 @@ def plot_u_and_d_term(u_and_d, params, save=False, path='', plot=True):
 
     for ii, rho in enumerate(rho_spin.T):
         ax[1].plot(time, rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
-    if params['Ustep']: plot_divider(ax[1], time, rho)
+    if bool(params['Ustep']): plot_divider(ax[1], time, rho)
     ax[1].legend()
 
     plt.tight_layout()
@@ -203,7 +203,7 @@ def plot_half_entanglement(entanglement, params, save=False, path='', plot=True)
     time = np.arange(num_timesteps)*timestep/hopping
 
     ax.plot(time, entanglement, 'o--', color='forestgreen')
-    if params['Ustep']: plot_divider(ax, time, entanglement)
+    if bool(params['Ustep']): plot_divider(ax, time, entanglement)
     ax.set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
     ax.set_ylabel(r'Von Neumann entropy cutting in half the system $S_V$', fontsize=14)
     #ax.set_yscale('log')
@@ -239,7 +239,7 @@ def plot_matter_link_entanglement(entanglement, params, save=False, path='', plo
     time = np.arange(num_timesteps)*timestep/hopping
 
     ax.plot(time, entanglement, 'o--', color='forestgreen')
-    if params['Ustep']: plot_divider(ax, time, entanglement)
+    if bool(params['Ustep']): plot_divider(ax, time, entanglement)
     ax.set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
     ax.set_ylabel(r'Von Neumann entropy cutting matter and links $S_V$', fontsize=14)
     #ax.set_yscale('log')
@@ -281,7 +281,7 @@ def plot_ud_term(ud_term, params, save=False, path='', plot=True):
     markers = list(Line2D.markers.keys())
     for ii, rho in enumerate(ud_term.T):
         ax.plot(time, rho, markers[ii]+'--', color=colors(ii), label=sites[ii], alpha=0.8)
-    if params['Ustep']: plot_divider(ax, time, rho)
+    if bool(params['Ustep']): plot_divider(ax, time, rho)
     ax.legend()
     ax.set_xlabel(r'Time $\frac{{timestep}}{t}$', fontsize=14)
     ax.set_ylabel(r'Joint expectation $\langle n_{\uparrow}n_{\downarrow}\rangle$', fontsize=14)

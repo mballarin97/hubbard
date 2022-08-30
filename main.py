@@ -40,7 +40,7 @@ if __name__ == '__main__':
     # Hopping constant, usually called J or t
     hopping_constant = float(args.t)
     # Onsite constant, usually called U
-    if args.Ustep:
+    if not args.Ustep:
         onsite_constant = np.linspace(float(args.Umin), float(args.Umax), int(args.num_timesteps))
     else:
         first_evol = int(int(args.num_timesteps)/10)
