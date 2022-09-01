@@ -10,6 +10,7 @@
 
 from qiskit import QuantumRegister
 from copy import deepcopy
+import numpy as np
 
 EVEN_SITE_LIST = ['u', 'd', 'w', 's', 'e', 'n']
 ODD_SITE_LIST = ['d', 'u', 's', 'w', 'n', 'e']
@@ -134,9 +135,15 @@ class HubbardRegister():
     ----------
     shape: tuple of ints
         Shape of the Hubbard lattice
+    ordering : list of ints
+        New order of the sites to minimize the entanglement.
+        Default is None, with the following ordering:
+        - All the vertical links, left to right, down to up
+        - All the horizontal links, left to right, down to up
+        - All the sites, left to right, down to up
     """
 
-    def __init__(self, shape):
+    def __init__(self, shape, ordering=None):
 
         vert_links = [ii for ii in range(shape[1]*(shape[0]-1))]
         horiz_links = [ii for ii in range(shape[0]*(shape[1]-1))]
@@ -148,8 +155,8 @@ class HubbardRegister():
 
         self.qregisters = list(links_qr.values())
         self.registers = {}
-        for xpos in range(shape[0]):
-            for ypos in range(shape[1]):
+        for ypos in range(shape[1]):
+            for xpos in range(shape[0]):
 
                 link_regs = {}
 
@@ -169,6 +176,11 @@ class HubbardRegister():
 
                 self.registers[f'q({xpos}, {ypos})'] = site
                 self.qregisters += [site.qregister]
+
+        self.qregisters = np.array(self.qregisters)
+        if ordering is not None:
+            self.qregisters = self.qregisters[ordering]
+
 
     def __getitem__(self, key):
         """ Get access to the correct SiteRegister """

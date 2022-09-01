@@ -48,17 +48,20 @@ if __name__ == '__main__':
 
     # First, check that the simulation makes sense through the
     # symmetry checks
-    symmetry_checks = np.loadtxt(os.path.join(dir_path, 'symmetry_check.txt' ))
-    if 1 in symmetry_checks:
-        raise RuntimeError(
-            f"""
-            ===============================================
-            ==================== ERROR ====================
-            ===============================================
-            The plaquette symmetry is not conserved,
-            so no plots have been generated.
-            The simulation {idx} is worthless.
-            """)
+    try:
+        symmetry_checks = np.loadtxt(os.path.join(dir_path, 'symmetry_check.txt' ))
+        if 1 in symmetry_checks:
+            raise RuntimeError(
+                f"""
+                ===============================================
+                ==================== ERROR ====================
+                ===============================================
+                The plaquette symmetry is not conserved,
+                so no plots have been generated.
+                The simulation {idx} is worthless.
+                """)
+    except OSError:
+        print('Symmetry checks not present')
 
     # Load and plot kinetic term
     #kinetic = np.loadtxt(os.path.join(dir_path, 'kinetic.txt' ))

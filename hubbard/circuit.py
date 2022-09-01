@@ -13,7 +13,7 @@ from .registers import HubbardRegister
 
 __all__ = ['hubbard_circuit', 'initialize_chessboard']
 
-def hubbard_circuit(shape, ancilla_register, classical_registers):
+def hubbard_circuit(shape, ancilla_register, classical_registers, ordering=None):
     """
     Initialize a quantum circuit with the Hubbard
     shape
@@ -26,6 +26,12 @@ def hubbard_circuit(shape, ancilla_register, classical_registers):
         Quantum register defining the ancilla qubits
     classical_registers : ClassicalRegister
         Classical register for the measurements
+    ordering : list of ints
+        New order of the sites to minimize the entanglement.
+        Default is None, with the following ordering:
+        - All the vertical links, left to right, down to up
+        - All the horizontal links, left to right, down to up
+        - All the sites, left to right, down to up
 
     Return
     ------
@@ -36,7 +42,7 @@ def hubbard_circuit(shape, ancilla_register, classical_registers):
         The quantum circuit
     """
 
-    registers = HubbardRegister(shape)
+    registers = HubbardRegister(shape, ordering)
 
     qc = QuantumCircuit(*registers.qregisters, ancilla_register, *classical_registers,
         name=f'Hubbard {shape}')

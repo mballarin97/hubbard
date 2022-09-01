@@ -8,12 +8,19 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from qiskit import QuantumCircuit
-from .qiskit_pauli import WeightedPauliOperator
+import os
 import numpy as np
-from .operators import generate_hopping, from_operators_to_pauli_dict
 
-__all__ = ['evolution_operation', 'insert_noise']
+import pickle
+from qiskit import QuantumCircuit, AncillaRegister, ClassicalRegister
+from qiskit.circuit import Parameter
+from qmatchatea.preprocessing import _preprocess_qk
+from .qiskit_pauli import WeightedPauliOperator
+from .operators import generate_hopping, from_operators_to_pauli_dict
+from .circuit import hubbard_circuit
+
+__all__ = ['evolution_operation', 'insert_noise', 'generate_evolution_circuit',
+            'adiabatic_operation']
 
 def generate_global_hopping(qc, regs, link_idx, species, coupling=1):
     """
@@ -247,3 +254,113 @@ def insert_noise(qc, gates, probs, noisy_gates = None):
                 noisy_qc.append(gate, [site] )
 
     return noisy_qc
+
+def generate_evolution_circuit(shape, time_step=0.01, num_trotter_steps=1, hopping_constant=1,
+    filename=None):
+    """
+    Generate and save on file the evolution circuit, already linearized for an MPS evolution.
+    The file is `circuit/evol_{shape}.pkl` if it is not passed to the function
+
+    Parameters
+    ----------
+    shape : tuple
+        Shape of the lattice
+    time_step : float, optional
+        Time step for the evolution. Also a qiskit Parameter is allowed, by default 0.01
+    num_trotter_steps : int, optional
+        Number of trotter steps in the decomposition, by default 1
+    hopping_constant : float, optional
+        Hopping constant for the Hamiltonian. Also a qiskit Parameter is allowed, by default 1
+    filename : str, optional
+        PATH to the file where to save the circuit. If None, `circuit/evol_{shape}.pkl` is used.
+        By default None.
+    """
+    # Plaquettes definition
+    plaquettes = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]-1) ]
+
+    # ============= Initialize qiskit variables =============
+    qancilla = AncillaRegister(1, 'a0')
+    cancillas = [ClassicalRegister(1, f'ca{ii}') for ii in range(len(plaquettes))]
+    regs, qc = hubbard_circuit(shape, qancilla, cancillas )
+    evolution_instruction = evolution_operation(qc, regs, shape,
+            hopping_constant, Parameter('U'), time_step, num_trotter_steps)
+    qc.append(evolution_instruction, range(qc.num_qubits))
+    qc = _preprocess_qk(qc, True, optimization=3)
+    print(f'====== num_qubits = {qc.num_qubits}')
+    print(f'====== Two-qubits gates = {qc.num_nonlocal_gates()}')
+
+    if filename is None:
+        if not os.path.isdir('circuits'):
+            os.mkdir('circuits')
+        filename = f'circuits/evol_{shape}.pkl'
+    else:
+        qc.qasm(True, filename)
+
+    with open(filename,"wb") as fh:
+        pickle.dump(qc, fh)
+
+def adiabatic_operation(qc, regs, shape,
+    interaction_constant, onsite_constant,
+    chemical_potential,
+    dt, num_trotter_steps):
+    """
+    Generate the evolution istruction for the Hubbard model
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        qiskit hubbard quantum circuit
+    regs : dict
+        Dictionary of the registers
+    shape : tuple
+        Shape of the lattice
+    interaction_constant : float
+        Value of the interaction constant
+    onsite_constant : float
+        Value of the on-site constant
+    dt : float
+        Time of the evolution operation
+    num_trotter_steps : int
+        Number of trotter steps for the evolution
+
+    Returns
+    -------
+    instruction
+        qinstruction with the evolution
+    """
+    alpha = Parameter('α')
+    # Links available in lattice of given shape
+    avail_links = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]+1)]
+    avail_links += [(shape[0]-1, jj) for jj in range(shape[1]) if jj%2==1]
+
+    total_hamiltonian = {}
+    # Generate hopping term of Hubbard hamiltonian
+    for link_idx in avail_links:
+        # Generate the hopping for both the matter species
+        for specie in ('u', 'd'):
+            hop_term = generate_global_hopping(qc, regs, link_idx, specie, interaction_constant*alpha)
+            total_hamiltonian.update(hop_term)
+    # Generate on-site term of hubbard hamiltonian
+    sites = [(ii, jj) for ii in range(shape[0]) for jj in range(shape[1])]
+    for site in sites:
+        onsite_term = generate_global_onsite(qc, regs, site, onsite_constant*alpha)
+        total_hamiltonian.update(onsite_term)
+
+    # Generate starting hamiltonian
+    for site in sites:
+        if site[0]+site[1] %2 == 0:
+            sign = -1
+        else:
+            sign = 1
+        onsite_term = generate_global_onsite(qc, regs, site, sign*chemical_potential*(1-alpha) )
+        total_hamiltonian.update(onsite_term)
+
+    # From dictionary to qiskit pauli_dict
+    pauli_dict = from_operators_to_pauli_dict(total_hamiltonian)
+    hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
+
+    # Create evolution instruction
+    adiabatic_instruction = hamiltonian.evolve_instruction(evo_time=dt,
+        expansion_order=2, num_time_slices=num_trotter_steps)
+
+    return adiabatic_instruction
