@@ -352,7 +352,7 @@ def adiabatic_operation(qc, regs, shape,
             sign = -1
         else:
             sign = 1
-        onsite_term = generate_global_onsite(qc, regs, site, sign*chemical_potential*(1-alpha) )
+        onsite_term = generate_starting_onsite(qc, regs, site, sign*chemical_potential*(1-alpha) )
         total_hamiltonian.update(onsite_term)
 
     # From dictionary to qiskit pauli_dict
@@ -364,3 +364,64 @@ def adiabatic_operation(qc, regs, shape,
         expansion_order=2, num_time_slices=num_trotter_steps)
 
     return adiabatic_instruction
+
+def generate_starting_onsite(qc, regs, site_idx, potential=1):
+    """
+    Generate the onsite operators of the hamiltonian given the
+    jordan-wigner transformation. Thus, the output are Pauli strings.
+    The operator is global in the sense that is padded with identities.
+
+    Parameters
+    ----------
+    qc : :py:class:`QuantumCircuit`
+        Quantum circuit class containing the Hubbard circuit
+    regs : dict
+        Dictionary of the SiteRegisters
+    link_idx : tuple
+        Unique identifier of the link where the hopping will take place
+    species : str
+        Matter species involved in the hopping
+    potential : 1
+        Value of the coefficient of the potential
+
+    Return
+    ------
+    dict
+        Dictionary where the keys is the global onsite operator,
+        the values is its coefficient
+
+    Example
+    -------
+    We report here an example of the vertex numbering
+
+    .. code-block::
+
+        (0,2)--(1,2)--(2,2)
+          |      |      |
+        (0,1)--(1,1)--(2,1)
+          |      |      |
+        (0,0)--(1,0)--(2,0)
+    """
+    # Retrieve the interested register
+    site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]})' ]
+    num_qubs = qc.num_qubits
+
+    # The local operator always has ZZ on the matter and
+    # identities elsewhere
+    hamiltonian_term = {}
+    matter_sites = ['u', 'd']
+    for matter in enumerate(matter_sites):
+        # Generate the global operators, padded with identities
+        global_operator = ['I']*num_qubs
+        qubit = site_reg[matter]
+        # Retrieve qubit index
+        qidx = qc.find_bit(qubit).index
+        global_operator[qidx] = 'Z'
+
+        # Pass from list of characters to string, inverting the ordering
+        # to satisfy qiskit convention
+        global_operator = ''.join(global_operator[::-1])
+
+        hamiltonian_term[global_operator] = 0.5*potential
+
+    return hamiltonian_term

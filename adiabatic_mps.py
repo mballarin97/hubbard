@@ -41,7 +41,7 @@ if __name__ == '__main__':
     # Chemical potential
     chemical_potential = 1
     # Number of steps in the evolution
-    alpha_steps = 100000
+    alpha_steps = 1000
     # Maximum bond dimension of the simulation
     max_bond_dim = 10000
 
