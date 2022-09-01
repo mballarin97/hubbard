@@ -9,7 +9,7 @@
 # that they have been altered from the originals.
 
 from qiskit import QuantumCircuit
-from qiskit.aqua.operators import WeightedPauliOperator
+from .qiskit_pauli import WeightedPauliOperator
 import numpy as np
 from .operators import generate_hopping, from_operators_to_pauli_dict
 

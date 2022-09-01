@@ -11,7 +11,6 @@
 import os
 import json
 import numpy as np
-from sympy import symmetric_poly
 import hubbard.plotter as hplt
 
 if __name__ == '__main__':
@@ -62,16 +61,16 @@ if __name__ == '__main__':
             """)
 
     # Load and plot kinetic term
-    kinetic = np.loadtxt(os.path.join(dir_path, 'kinetic.txt' ))
-    hplt.plot_kinetic_term(kinetic, sim_params, save, save_path, plot)
+    #kinetic = np.loadtxt(os.path.join(dir_path, 'kinetic.txt' ))
+    #hplt.plot_kinetic_term(kinetic, sim_params, save, save_path, plot)
 
     # Load and plot charge and spin density
     up_and_down = np.loadtxt(os.path.join(dir_path, 'u_and_d.txt' ))
     hplt.plot_u_and_d_term(up_and_down, sim_params, save, save_path, plot)
 
     # Load and plot entanglement of half tghe system
-    entanglement = np.loadtxt(os.path.join(dir_path, 'entanglement_half.txt' ))
-    hplt.plot_half_entanglement(entanglement, sim_params, save, save_path, plot)
+    #entanglement = np.loadtxt(os.path.join(dir_path, 'entanglement_half.txt' ))
+    #hplt.plot_half_entanglement(entanglement, sim_params, save, save_path, plot)
 
     # Load and plot entanglement between links and matter
     entanglement = np.loadtxt(os.path.join(dir_path, 'entanglement_matter_link.txt' ))

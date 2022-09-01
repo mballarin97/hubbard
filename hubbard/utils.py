@@ -45,7 +45,7 @@ def hubbard_parser():
     parser.add_argument('--Ustep', nargs='?', const=True, default=False,
         help="""If provided, the change from Umax to Umin is a quench at 1/10 of the
             total simulation time.""")
-    parser.add_argument('--num_timesteps', nargs='?', const=-8, default=-8,
+    parser.add_argument('--num_timesteps', nargs='?', const=100, default=100,
         help="""Total number of timesteps in the simulation.""")
     parser.add_argument('--clear', nargs='?', const=True, default=False,
         help="""Delete the data folder and return""")

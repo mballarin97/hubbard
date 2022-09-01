@@ -127,7 +127,7 @@ def from_operators_to_pauli_dict(pauli_hamiltonian):
     for label, coeff in pauli_hamiltonian.items():
         paulis += [
             {
-                "coeff": {"imag": np.imag(coeff), "real": np.real(coeff)},
+                "coeff": {"real": np.real(coeff)},
                 "label": label
             }
         ]

@@ -138,11 +138,13 @@ class HubbardRegister():
 
     def __init__(self, shape):
 
-        avail_links = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]+1)]
-        avail_links += [(shape[0]-1, jj) for jj in range(shape[1]) if jj%2==1]
+        vert_links = [ii for ii in range(shape[1]*(shape[0]-1))]
+        horiz_links = [ii for ii in range(shape[0]*(shape[1]-1))]
         links_qr = {}
-        for link_idx in avail_links:
-            links_qr[f'l{link_idx}'] = QuantumRegister(1, f'l{link_idx}')
+        for link_idx in vert_links:
+            links_qr[f'lv{link_idx}'] = QuantumRegister(1, f'lv{link_idx}')
+        for link_idx in horiz_links:
+            links_qr[f'lh{link_idx}'] = QuantumRegister(1, f'lh{link_idx}')
 
         self.qregisters = list(links_qr.values())
         self.registers = {}
@@ -152,16 +154,16 @@ class HubbardRegister():
                 link_regs = {}
 
                 if xpos != 0:
-                    link_regs['w'] = links_qr[f'l({xpos-1}, {ypos*2})']
+                    link_regs['w'] = links_qr[f'lh{xpos-1+ypos*(shape[0]-1)}']
 
                 if xpos != shape[0]-1:
-                    link_regs['e'] = links_qr[f'l({xpos}, {ypos*2})']
+                    link_regs['e'] = links_qr[f'lh{xpos+ypos*(shape[0]-1)}']
 
                 if ypos != 0:
-                    link_regs['s'] = links_qr[f'l({xpos}, {ypos*2-1})']
+                    link_regs['s'] = links_qr[f'lv{ypos-1+xpos*(shape[1]-1)}']
 
                 if ypos != shape[1]-1:
-                    link_regs['n'] = links_qr[f'l({xpos}, {ypos*2+1})']
+                    link_regs['n'] = links_qr[f'lv{ypos+xpos*(shape[1]-1)}']
 
                 site = SiteRegister(xpos, ypos, shape, link_regs)
 
