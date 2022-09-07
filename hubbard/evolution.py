@@ -53,15 +53,15 @@ def generate_global_hopping(qc, regs, link_idx, species, coupling=1):
 
     .. code-block::
 
-          q-(0,4)-q-(1,4)-q-(2,4)-q
-          |       |       |       |
-        (0,3)   (1,3)   (2,3)   (3,3)
-          |       |       |       |
-          q-(0,2)-q-(1,2)-q-(2,2)-q
-          |       |       |       |
-        (0,1)   (1,1)   (2,1)   (3,1)
-          |       |       |       |
-          q-(0,0)-q-(1,0)-q-(2,0)-q
+          q-h6-q-h7-q-h8-q
+          |    |    |    |
+         v4    v5   v6   v7
+          |    |    |    |
+          q-h3-q-h4-q-h5-q
+          |    |    |    |
+         v0    v1   v2   v3
+          |    |    |    |
+          q-h0-q-h1-q-h2-q
     """
     # Generate the local operator, defined only on the interested
     # registers
@@ -163,7 +163,7 @@ def generate_global_onsite(qc, regs, site_idx, potential=1):
     # Pass from list of characters to string, inverting the ordering
     # to satisfy qiskit convention
     global_operator = ''.join(global_operator[::-1])
-    return {global_operator: 0.5*potential}
+    return {global_operator: 0.25*potential}
 
 def evolution_operation(qc, regs, shape,
     interaction_constant, onsite_constant, dt, num_trotter_steps):
@@ -194,8 +194,9 @@ def evolution_operation(qc, regs, shape,
     """
 
     # Links available in lattice of given shape
-    avail_links = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]+1)]
-    avail_links += [(shape[0]-1, jj) for jj in range(shape[1]) if jj%2==1]
+    vert_links = [f'lv{ii}' for ii in range(shape[1]*(shape[0]-1))]
+    horiz_links = [f'lh{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    avail_links = vert_links + horiz_links
 
     hubbard_hamiltonian = {}
     # Generate hopping term
@@ -330,8 +331,9 @@ def adiabatic_operation(qc, regs, shape,
     """
     alpha = Parameter('α')
     # Links available in lattice of given shape
-    avail_links = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]+1)]
-    avail_links += [(shape[0]-1, jj) for jj in range(shape[1]) if jj%2==1]
+    vert_links = [f'lv{ii}' for ii in range(shape[1]*(shape[0]-1))]
+    horiz_links = [f'lh{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    avail_links = vert_links + horiz_links
 
     total_hamiltonian = {}
     # Generate hopping term of Hubbard hamiltonian
@@ -343,12 +345,16 @@ def adiabatic_operation(qc, regs, shape,
     # Generate on-site term of hubbard hamiltonian
     sites = [(ii, jj) for ii in range(shape[0]) for jj in range(shape[1])]
     for site in sites:
+        # ZZ term
         onsite_term = generate_global_onsite(qc, regs, site, onsite_constant*alpha)
         total_hamiltonian.update(onsite_term)
+        # Z+Z term
+        #onsite_term = generate_starting_onsite(qc, regs, site, -onsite_constant*alpha )
+        #total_hamiltonian.update(onsite_term)
 
     # Generate starting hamiltonian
     for site in sites:
-        if site[0]+site[1] %2 == 0:
+        if (site[0]+site[1]) %2 == 0:
             sign = -1
         else:
             sign = 1
@@ -358,10 +364,11 @@ def adiabatic_operation(qc, regs, shape,
     # From dictionary to qiskit pauli_dict
     pauli_dict = from_operators_to_pauli_dict(total_hamiltonian)
     hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
+    print(hamiltonian.print_details())
 
     # Create evolution instruction
     adiabatic_instruction = hamiltonian.evolve_instruction(evo_time=dt,
-        expansion_order=2, num_time_slices=num_trotter_steps)
+        expansion_order=2, num_time_slices=num_trotter_steps)#,expansion_mode='suzuki')
 
     return adiabatic_instruction
 
@@ -406,11 +413,11 @@ def generate_starting_onsite(qc, regs, site_idx, potential=1):
     site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]})' ]
     num_qubs = qc.num_qubits
 
-    # The local operator always has ZZ on the matter and
+    # The local operator always has Z on the matter and
     # identities elsewhere
     hamiltonian_term = {}
     matter_sites = ['u', 'd']
-    for matter in enumerate(matter_sites):
+    for matter in matter_sites:
         # Generate the global operators, padded with identities
         global_operator = ['I']*num_qubs
         qubit = site_reg[matter]

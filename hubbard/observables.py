@@ -9,7 +9,8 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from .qiskit_pauli import WeightedPauliOperator
+#from .qiskit_pauli import WeightedPauliOperator
+from qiskit.aqua.operators.legacy import WeightedPauliOperator
 from .evolution import generate_global_hopping
 from .operators import from_operators_to_pauli_dict
 from .utils import entanglement_entropy
@@ -42,8 +43,9 @@ def compute_kinetic_expectation(qc, regs, shape, statevect, interaction_constant
         Expectation value of the kinetic term
     """
     # Links available in lattice of given shape
-    avail_links = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]+1)]
-    avail_links += [(shape[0]-1, jj) for jj in range(shape[1]) if jj%2==1]
+    vert_links = [f'lv{ii}' for ii in range(shape[1]*(shape[0]-1))]
+    horiz_links = [f'lh{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    avail_links = vert_links + horiz_links
 
     # Generate the kinetic term
     hubbard_hamiltonian = {}

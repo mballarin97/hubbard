@@ -19,6 +19,7 @@ from qiskit.providers.aer import StatevectorSimulator
 
 import hubbard as hbb
 import hubbard.observables as obs
+from qmatchatea import print_state
 
 
 if __name__ == '__main__':
@@ -60,15 +61,16 @@ if __name__ == '__main__':
     plaquettes = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]-1) ]
 
     # ============= Initialize results directory =============
-    data_folder = 'data'
-    if not os.path.isdir(data_folder):
-        os.mkdir(data_folder)
-    subfolders = [ int(f.name) for f in os.scandir(data_folder) if f.is_dir() ] + [-1]
-    dir_name = os.path.join('data', str(max(subfolders)+1) )
-    if not os.path.isdir(dir_name):
-        os.mkdir(dir_name)
-    with open(os.path.join(dir_name, 'params.json'), 'w') as fh:
-        hbb.write_json(parameters_dict, fh)
+    if False:
+        data_folder = 'data'
+        if not os.path.isdir(data_folder):
+            os.mkdir(data_folder)
+        subfolders = [ int(f.name) for f in os.scandir(data_folder) if f.is_dir() ] + [-1]
+        dir_name = os.path.join('data', str(max(subfolders)+1) )
+        if not os.path.isdir(dir_name):
+            os.mkdir(dir_name)
+        with open(os.path.join(dir_name, 'params.json'), 'w') as fh:
+            hbb.write_json(parameters_dict, fh)
 
     # ============= Initialize qiskit variables =============
     backend = StatevectorSimulator(precision='double')
@@ -115,6 +117,9 @@ if __name__ == '__main__':
         statevect = results.get_statevector(qc)
         if apply_stabilizers:
             counts = results.get_counts()
+        if idx == 0:
+            print(results.get_counts())
+            print_state(statevect)
 
         if apply_stabilizers:
             symmetry_check[idx, :] = list( list(counts.keys())[0] )

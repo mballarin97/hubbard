@@ -35,16 +35,19 @@ if __name__ == '__main__':
     # Number of trotterization steps for the single timestep
     num_trotter_steps = 1
     # Hopping constant, usually called J or t
-    hopping_constant = 1
+    hopping_constant = 0.1
     # Onsite constant, usually called U
-    onsite_constant = -8
+    onsite_constant = -100
     # Chemical potential
-    chemical_potential = 1
+    chemical_potential = 0#-0.001
     # Number of steps in the evolution
-    alpha_steps = 1000
+    alpha_steps = 100
     # Maximum bond dimension of the simulation
     max_bond_dim = 10000
+    # Number of evolution timesteps after the adiabatic process was over
+    final_time = 0
 
+    # Parameters dictionary for saving
     parameters_dict = {}
     parameters_dict['U'] = onsite_constant
     parameters_dict['t'] = hopping_constant
@@ -52,7 +55,7 @@ if __name__ == '__main__':
     parameters_dict['mps'] = True
     parameters_dict['chi'] = max_bond_dim
     parameters_dict['num_trotter_steps'] = num_trotter_steps
-    parameters_dict['num_timesteps'] = alpha_steps
+    parameters_dict['num_timesteps'] = alpha_steps + final_time
     parameters_dict['shape'] = shape
     parameters_dict['adiabatic'] = True
     parameters_dict['Ustep'] = False
@@ -96,15 +99,16 @@ if __name__ == '__main__':
     qc = _preprocess_qk(qc, True, optimization=3)
 
     # ============= Apply Evolution =============
-    u_and_d_exps = np.zeros((alpha_steps, 2*len(regs)) )
-    ud_exps = np.zeros((alpha_steps, len(regs)) )
-    entanglement_matter_links_exps = np.zeros(alpha_steps)
+    u_and_d_exps = np.zeros((alpha_steps+final_time, 2*len(regs)) )
+    ud_exps = np.zeros((alpha_steps+final_time, len(regs)) )
+    entanglement_matter_links_exps = np.zeros(alpha_steps+final_time)
     idx = 0
 
     initial_state='Vacuum'
 
     qc1 = QuantumCircuit(*qc.qregs, *qc.cregs)
     qc1.append(evolution_instruction, range(qc.num_qubits))
+    #print(_preprocess_qk(qc1, False, basis_gates=['u', 'cx', 'p', 'h', 'swap']))
     evolution_circ = _preprocess_qk(qc1, True, basis_gates=['u', 'cx', 'p', 'h', 'swap'], optimization=3)
 
     # ============= Prepare observables =============
@@ -122,26 +126,33 @@ if __name__ == '__main__':
     qc_obs += TNObsBondEntropy()
     qc_obs += TNState2File('state.txt', 'F')
 
-    # Add a first timestep with very strong U, the initial state setting
+    # Prepare the alphas linearly spaced in 0,1 and then add
+    # a series of 1s for the final evolution
     alphas = np.linspace(0, 1, alpha_steps, endpoint=True)
+    alphas = np.append(alphas, np.ones(final_time))
+
+    # ================= Main loop, over the alphas =================
     for alpha in tqdm(alphas):
-        # Start from the state at the previous timestep
-        if idx > 0:
-            qc = deepcopy(evolution_circ)
-            qc = qc.bind_parameters([alpha])
+        # ===== Inner loop, for each alpha evolve for 10 timesteps =====
+        for jj in range(10):
+            # Start from the state at the previous timestep
+            if idx > 0 or jj>0:
+                qc = deepcopy(evolution_circ)
+                qc = qc.bind_parameters( [alpha*0.1])
 
-        # Simulate the circuit
-        qcio = qtea.QCIO(inPATH='temp/in/', outPATH='temp/out/', initial_state=initial_state)
-        res = run_simulation(qc,
-                            convergence_parameters=conv_params,
-                            io_info=qcio,
-                            observables=qc_obs,
-                            operators=qc_ops,
-                            approach='PY',
-                            transpilation_parameters=qk_transpilation_params(False)
-                            )
-        initial_state = MPS.from_tensor_list(res.mps, conv_params)
+            # Simulate the circuit
+            qcio = qtea.QCIO(inPATH='temp/in/', outPATH='temp/out/', initial_state=initial_state)
+            res = run_simulation(qc,
+                                convergence_parameters=conv_params,
+                                io_info=qcio,
+                                observables=qc_obs,
+                                operators=qc_ops,
+                                approach='PY',
+                                transpilation_parameters=qk_transpilation_params(False)
+                                )
+            initial_state = MPS.from_tensor_list(res.mps, conv_params)
 
+        # Extract observables for each alpha (NOT EACH TIMESTEP)
         for ii, site in enumerate(regs.values()):
             name = site.name
             ud_exps[idx, ii] = np.real(res.observables[name+'ud'])

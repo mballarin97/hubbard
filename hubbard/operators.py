@@ -35,25 +35,31 @@ def generate_hopping(regs, link_idx, species):
 
     .. code-block::
 
-          q-(0,4)-q-(1,4)-q-(2,4)-q
-          |       |       |       |
-        (0,3)   (1,3)   (2,3)   (3,3)
-          |       |       |       |
-          q-(0,2)-q-(1,2)-q-(2,2)-q
-          |       |       |       |
-        (0,1)   (1,1)   (2,1)   (3,1)
-          |       |       |       |
-          q-(0,0)-q-(1,0)-q-(2,0)-q
+          q-h6-q-h7-q-h8-q
+          |    |    |    |
+         v4    v5   v6   v7
+          |    |    |    |
+          q-h3-q-h4-q-h5-q
+          |    |    |    |
+         v0    v1   v2   v3
+          |    |    |    |
+          q-h0-q-h1-q-h2-q
     """
     # If the y component of the index is even
     # the link is horizontal, otherwise vertical
-    is_horizontal = (link_idx[1]%2 == 0)
+    is_horizontal = (link_idx[1] == 'h')
+    link_idx = int(link_idx[2:])
+    shape = regs.shape
     if is_horizontal:
-        from_site_reg = regs[ f'q({link_idx[0]}, {link_idx[1]//2})' ]
-        to_site_reg = regs[ f'q({link_idx[0]+1}, {link_idx[1]//2})' ]
+        ypos = link_idx//(shape[0]-1)
+        xpos = link_idx%(shape[0]-1)
+        from_site_reg = regs[ f'q({xpos}, {ypos})' ]
+        to_site_reg = regs[ f'q({xpos+1}, {ypos})' ]
     else:
-        from_site_reg = regs[ f'q({link_idx[0]}, {link_idx[1]-1})' ]
-        to_site_reg = regs[ f'q({link_idx[0]}, {link_idx[1]})' ]
+        ypos = link_idx//shape[0]
+        xpos = link_idx%shape[0]
+        from_site_reg = regs[ f'q({xpos}, {ypos})' ]
+        to_site_reg = regs[ f'q({xpos}, {ypos+1})' ]
 
     from_site_list = np.array(['I' for _ in from_site_reg.map])
     to_site_list = np.array(['I' for _ in to_site_reg.map])

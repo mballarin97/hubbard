@@ -1,5 +1,6 @@
 import hubbard as hbb
-from hubbard.evolution import generate_global_hopping, from_operators_to_pauli_dict, WeightedPauliOperator
+from hubbard.evolution import generate_global_hopping, from_operators_to_pauli_dict
+from qiskit.aqua.operators.legacy import WeightedPauliOperator
 from qiskit import AncillaRegister, ClassicalRegister
 from qiskit.providers.aer import StatevectorSimulator
 import numpy as np
@@ -17,13 +18,15 @@ if __name__ == '__main__':
     # Initialize Hubbard state
     shape = (2, 2)
     regs, qc = hbb.hubbard_circuit(shape, qancilla, [cancilla, cancilla1] )
+    print(qc.qregs)
     qc = hbb.initialize_chessboard(qc, regs)
     qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancilla, (0,0) )
     qc.barrier()
     global_hops = []
     # Links available in lattice of given shape
-    avail_links = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]+1)]
-    avail_links += [(shape[0]-1, jj) for jj in range(shape[1]) if jj%2==1]
+    vert_links = [f'lv{ii}' for ii in range(shape[1]*(shape[0]-1))]
+    horiz_links = [f'lh{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    avail_links = vert_links + horiz_links
 
     hubbard_hamiltonian = {}
     # Generate hopping term
@@ -37,7 +40,7 @@ if __name__ == '__main__':
     pauli_dict = from_operators_to_pauli_dict(hubbard_hamiltonian)
     hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
 
-    pauli_dict = from_operators_to_pauli_dict({'IIIIIIIIIXYYX' : 1})
+    pauli_dict = from_operators_to_pauli_dict({'IIIIIIIIIYXXY' : 1})
     p_stabilizer = WeightedPauliOperator.from_dict(pauli_dict)
 
     print('Hopping term of the hamiltonian:')

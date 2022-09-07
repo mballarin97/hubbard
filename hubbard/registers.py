@@ -155,6 +155,7 @@ class HubbardRegister():
 
         self.qregisters = list(links_qr.values())
         self.registers = {}
+        self.shape = shape
         for ypos in range(shape[1]):
             for xpos in range(shape[0]):
 
@@ -177,7 +178,7 @@ class HubbardRegister():
                 self.registers[f'q({xpos}, {ypos})'] = site
                 self.qregisters += [site.qregister]
 
-        self.qregisters = np.array(self.qregisters)
+        self.qregisters = np.array(self.qregisters, dtype=object)
         if ordering is not None:
             self.qregisters = self.qregisters[ordering]
 

@@ -16,8 +16,6 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correc
     recording the result of the projective measurement on a classical
     register
 
-    TODO: THE CONTROLLED Z FROM THE JORDAN-WIGNER ARE NOT IMPLEMENTED
-
     Parameters
     ----------
     qc : QuantumCircuit
@@ -94,6 +92,7 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correc
 
     if correct:
         # Apply a controlled z operation
+        print('correcting', regs[involved_regs['br']]['n'])
         qc.z(regs[involved_regs['br']]['n']).c_if(cl_reg, 1)
 
     # Reset the ancilla

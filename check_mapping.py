@@ -1,6 +1,7 @@
+from qiskit.circuit import Parameter
 import hubbard as hbb
 from hubbard.evolution import generate_global_hopping, generate_global_onsite, generate_hopping
-from qiskit import AncillaRegister, ClassicalRegister, execute
+from qiskit import AncillaRegister, ClassicalRegister, execute, transpile
 from qiskit.providers.aer import StatevectorSimulator
 
 if __name__ == '__main__':
@@ -22,9 +23,9 @@ if __name__ == '__main__':
 
     print(regs['q(1, 0)']['w'] )
 
-    hop = generate_hopping(regs, (0, 1), 'u')
+    hop = generate_hopping(regs, 'lh0', 'u')
     print(hop)
-    global_hop = generate_global_hopping(qc, regs, (0, 1), 'u')
+    global_hop = generate_global_hopping(qc, regs, 'lh0', 'u')
     global_onsite = generate_global_onsite(qc, regs, (0, 0))
 
     keys = list(global_hop.keys())[::-1]
@@ -41,3 +42,8 @@ if __name__ == '__main__':
     state_str = hbb.lattice_str(qc, statevect.data, regs, shape)
 
     print(state_str)
+
+
+    evol = hbb.evolution_operation(qc, regs, shape, 1j,-8, Parameter('dt'), 1) # Parameter('J'), Parameter('U'), Parameter('dt'), 1)
+    qc.append(evol, range(qc.num_qubits))
+    print(transpile( qc, basis_gates=['rx', 'ry', 'rz', 'h', 'cx']) )
