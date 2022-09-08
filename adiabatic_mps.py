@@ -37,15 +37,19 @@ if __name__ == '__main__':
     # Hopping constant, usually called J or t
     hopping_constant = 0.1
     # Onsite constant, usually called U
-    onsite_constant = -100
+    onsite_constant = -1
     # Chemical potential
-    chemical_potential = 0#-0.001
+    chemical_potential = -1#-0.001
     # Number of steps in the evolution
-    alpha_steps = 100
+    alpha_steps = 1000
     # Maximum bond dimension of the simulation
     max_bond_dim = 10000
     # Number of evolution timesteps after the adiabatic process was over
-    final_time = 0
+    final_time = 100
+    # Number of timesteps for a fixed alpha
+    num_timesteps_for_alpha = 100
+    # dt for the evolution at each alpha
+    dt = 0.1
 
     # Parameters dictionary for saving
     parameters_dict = {}
@@ -59,7 +63,8 @@ if __name__ == '__main__':
     parameters_dict['shape'] = shape
     parameters_dict['adiabatic'] = True
     parameters_dict['Ustep'] = False
-    parameters_dict['dt'] = 1/alpha_steps
+    parameters_dict['dt'] = dt
+    parameters_dict['steps_for_alpha'] = num_timesteps_for_alpha
     conv_params = qtea.QCConvergenceParameters(max_bond_dimension=max_bond_dim, singval_mode='C')
 
     # Vertexes definition
@@ -95,7 +100,7 @@ if __name__ == '__main__':
     qc.barrier()
     evolution_instruction = hbb.adiabatic_operation(original_qc, regs, shape,
             hopping_constant, onsite_constant, chemical_potential,
-            1, num_trotter_steps)
+            dt, num_trotter_steps)
     qc = _preprocess_qk(qc, True, optimization=3)
 
     # ============= Apply Evolution =============
@@ -134,11 +139,11 @@ if __name__ == '__main__':
     # ================= Main loop, over the alphas =================
     for alpha in tqdm(alphas):
         # ===== Inner loop, for each alpha evolve for 10 timesteps =====
-        for jj in range(10):
+        for jj in range(num_timesteps_for_alpha):
             # Start from the state at the previous timestep
             if idx > 0 or jj>0:
                 qc = deepcopy(evolution_circ)
-                qc = qc.bind_parameters( [alpha*0.1])
+                qc = qc.bind_parameters( [alpha])
 
             # Simulate the circuit
             qcio = qtea.QCIO(inPATH='temp/in/', outPATH='temp/out/', initial_state=initial_state)
