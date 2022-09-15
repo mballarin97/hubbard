@@ -20,6 +20,7 @@ from qiskit.providers.aer import StatevectorSimulator
 import hubbard as hbb
 import hubbard.observables as obs
 from qmatchatea import print_state
+from repulsive_u_initial import build_circuit
 
 
 if __name__ == '__main__':
@@ -41,12 +42,13 @@ if __name__ == '__main__':
     # Hopping constant, usually called J or t
     hopping_constant = float(args.t)
     # Onsite constant, usually called U
-    if not args.Ustep:
-        onsite_constant = np.linspace(float(args.Umin), float(args.Umax), int(args.num_timesteps))
-    else:
-        first_evol = int(int(args.num_timesteps)/10)
-        onsite_constant = np.array( [float(args.Umin)]*first_evol +
-                            [float(args.Umax)]*(int(args.num_timesteps)-first_evol) )
+    #if not args.Ustep:
+        #onsite_constant = np.linspace(float(args.Umin), float(args.Umax), int(args.num_timesteps))
+    #else:
+        #first_evol = int(int(args.num_timesteps)/10)
+        #onsite_constant = np.array( [float(args.Umin)]*first_evol +
+        #                    [float(args.Umax)]*(int(args.num_timesteps)-first_evol) )
+    onsite_constant = np.ones(int(args.num_timesteps))
     # Number of steps in the evolution
     evolution_steps = int(args.num_timesteps)
     parameters_dict = vars(args)
@@ -61,7 +63,7 @@ if __name__ == '__main__':
     plaquettes = [(ii, jj) for ii in range(shape[0]-1) for jj in range(shape[1]-1) ]
 
     # ============= Initialize results directory =============
-    if False:
+    if True:
         data_folder = 'data'
         if not os.path.isdir(data_folder):
             os.mkdir(data_folder)
@@ -79,7 +81,8 @@ if __name__ == '__main__':
 
     # ============= Initialize Hubbard circuit =============
     regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas )
-    qc = hbb.initialize_chessboard(qc, regs)
+    #qc = hbb.initialize_chessboard(qc, regs)
+    qc = build_circuit(qc, regs, qancilla, cancillas)
     for ii, pp in enumerate(plaquettes):
         qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
     qc.barrier()

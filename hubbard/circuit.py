@@ -11,7 +11,7 @@
 from qiskit import QuantumCircuit
 from .registers import HubbardRegister
 
-__all__ = ['hubbard_circuit', 'initialize_chessboard']
+__all__ = ['hubbard_circuit', 'initialize_chessboard', 'initialize_superposition_chessboard']
 
 def hubbard_circuit(shape, ancilla_register, classical_registers, ordering=None):
     """
@@ -78,6 +78,58 @@ def initialize_chessboard(qc, regs, final_barrier=True):
         if reg.is_even:
             qc.x(reg['u'])
             qc.x(reg['d'])
+
+    if final_barrier:
+        qc.barrier()
+
+    return qc
+
+def initialize_superposition_chessboard(qc, regs, ancilla, cl_reg, correct=True,
+    final_barrier=True):
+    """
+    Initialize the hubbard state with the superposition chessboard
+
+    .. code-block::
+
+        2 - 0 - 2 - 0       0 - 2 - 0 - 2
+        0 - 2 - 0 - 2   +   2 - 0 - 2 - 0
+        2 - 0 - 2 - 0       0 - 2 - 0 - 2
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        The Hubbard quantum circuit
+    regs : dict
+        The dictionary of the site registers
+    final_barrier : bool, optional
+        If True, put a barrier after the initialization.
+        Default to True
+
+    Returns
+    -------
+    QuantumCircuit
+        The quantum circuit with the initialization
+    """
+
+    qc = initialize_chessboard(qc, regs, final_barrier)
+
+    # Apply hadamard to the ancilla
+    qc.h( ancilla )
+
+    for reg in regs.values():
+        qc.cx(ancilla, reg['u'])
+        qc.cx(ancilla, reg['d'])
+
+    # Measure ancilla on x, i.e. hadamard+measure on z
+    qc.h(ancilla)
+    qc.measure(ancilla, cl_reg[0])
+
+    if correct:
+        # Apply a controlled z operation
+        qc.z(regs['q(0, 0)']['u']).c_if(cl_reg, 1)
+
+    # Reset the ancilla
+    qc.reset(ancilla)
 
     if final_barrier:
         qc.barrier()

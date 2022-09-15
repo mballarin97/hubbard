@@ -44,6 +44,6 @@ if __name__ == '__main__':
     print(state_str)
 
 
-    evol = hbb.evolution_operation(qc, regs, shape, 1j,-8, Parameter('dt'), 1) # Parameter('J'), Parameter('U'), Parameter('dt'), 1)
+    evol = hbb.evolution_operation(qc, regs, shape, 1, 0, Parameter('dt'), 1) # Parameter('J'), Parameter('U'), Parameter('dt'), 1)
     qc.append(evol, range(qc.num_qubits))
     print(transpile( qc, basis_gates=['rx', 'ry', 'rz', 'h', 'cx']) )

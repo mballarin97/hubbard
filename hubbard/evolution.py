@@ -20,7 +20,7 @@ from .operators import generate_hopping, from_operators_to_pauli_dict
 from .circuit import hubbard_circuit
 
 __all__ = ['evolution_operation', 'insert_noise', 'generate_evolution_circuit',
-            'adiabatic_operation']
+            'adiabatic_operation', 'superposition_adiabatic_operation']
 
 def generate_global_hopping(qc, regs, link_idx, species, coupling=1):
     """
@@ -432,3 +432,62 @@ def generate_starting_onsite(qc, regs, site_idx, potential=1):
         hamiltonian_term[global_operator] = 0.5*potential
 
     return hamiltonian_term
+
+def superposition_adiabatic_operation(qc, regs, shape,
+    interaction_constant, onsite_constant,
+    dt, num_trotter_steps):
+    """
+    Generate the evolution istruction for the Hubbard model
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        qiskit hubbard quantum circuit
+    regs : dict
+        Dictionary of the registers
+    shape : tuple
+        Shape of the lattice
+    interaction_constant : float
+        Value of the interaction constant
+    onsite_constant : float
+        Value of the on-site constant
+    dt : float
+        Time of the evolution operation
+    num_trotter_steps : int
+        Number of trotter steps for the evolution
+
+    Returns
+    -------
+    instruction
+        qinstruction with the evolution
+    """
+    alpha = Parameter('α')
+    # Links available in lattice of given shape
+    vert_links = [f'lv{ii}' for ii in range(shape[1]*(shape[0]-1))]
+    horiz_links = [f'lh{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    avail_links = vert_links + horiz_links
+
+    total_hamiltonian = {}
+    # Generate hopping term of Hubbard hamiltonian
+    for link_idx in avail_links:
+        # Generate the hopping for both the matter species
+        for specie in ('u', 'd'):
+            hop_term = generate_global_hopping(qc, regs, link_idx, specie, interaction_constant*alpha)
+            total_hamiltonian.update(hop_term)
+    # Generate on-site term of hubbard hamiltonian
+    sites = [(ii, jj) for ii in range(shape[0]) for jj in range(shape[1])]
+    for site in sites:
+        # ZZ term
+        onsite_term = generate_global_onsite(qc, regs, site, onsite_constant)
+        total_hamiltonian.update(onsite_term)
+
+    # From dictionary to qiskit pauli_dict
+    pauli_dict = from_operators_to_pauli_dict(total_hamiltonian)
+    hamiltonian = WeightedPauliOperator.from_dict(pauli_dict)
+    print(hamiltonian.print_details())
+
+    # Create evolution instruction
+    adiabatic_instruction = hamiltonian.evolve_instruction(evo_time=dt,
+        expansion_order=2, num_time_slices=num_trotter_steps)#,expansion_mode='suzuki')
+
+    return adiabatic_instruction

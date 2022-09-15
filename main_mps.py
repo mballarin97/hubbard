@@ -34,6 +34,7 @@ if __name__ == '__main__':
     # Initialize parser
     parser = hbb.hubbard_parser()
     args = parser.parse_args()
+    initial_state = "data/25/mps_state.txt"
 
     if args.clear:
         rmtree('data')
@@ -47,25 +48,23 @@ if __name__ == '__main__':
     # Number of trotterization steps for the single timestep
     num_trotter_steps = 1
     # Hopping constant, usually called J or t
-    hopping_constant = float(args.t)
+    hopping_constant = 0.1
+    evolution_steps = 10000
     # Onsite constant, usually called U
-    if not args.Ustep:
-        onsite_constant = np.linspace(float(args.Umin), float(args.Umax), int(args.num_timesteps))
-    else:
-        first_evol = int(int(args.num_timesteps)/10)
-        onsite_constant = np.array( [float(args.Umin)]*first_evol +
-                            [float(args.Umax)]*(int(args.num_timesteps)-first_evol) )
+    onsite_constant = np.repeat(-1, evolution_steps)
     # Number of steps in the evolution
-    evolution_steps = int(args.num_timesteps)
     max_bond_dim = 10000
 
     parameters_dict = vars(args)
     parameters_dict.pop('clear')
     parameters_dict['U'] = onsite_constant
+    parameters_dict['t'] = hopping_constant
+    parameters_dict['num_timesteps'] = evolution_steps
     parameters_dict['mps'] = True
     parameters_dict['chi'] = max_bond_dim
     parameters_dict['num_trotter_steps'] = num_trotter_steps
     parameters_dict['shape'] = shape
+    parameters_dict['initial_state'] = initial_state
     # If True, apply stabilizers at each timestep
     apply_stabilizers = False
     conv_params = qtea.QCConvergenceParameters(max_bond_dimension=max_bond_dim, singval_mode='C')
@@ -96,10 +95,14 @@ if __name__ == '__main__':
 
     # ============= Initialize Hubbard circuit =============
     regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas )
-    qc = hbb.initialize_chessboard(qc, regs)
     original_qc = deepcopy(qc)
-    for ii, pp in enumerate(plaquettes):
-        qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
+    if initial_state is None:
+        qc = hbb.initialize_chessboard(qc, regs)
+        for ii, pp in enumerate(plaquettes):
+            qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
+        initial_state = "Vacuum"
+    else:
+        initial_state = MPS.from_tensor_list( qtea.read_mps(initial_state), conv_params)
 
     qc.barrier()
     evolution_instruction = hbb.evolution_operation(original_qc, regs, shape,
@@ -114,8 +117,6 @@ if __name__ == '__main__':
     entanglement_matter_links_exps = np.zeros(evolution_steps)
     symmetry_check = np.zeros((evolution_steps, len(plaquettes)), dtype=int )
     idx = 0
-
-    initial_state='Vacuum'
 
     qc1 = QuantumCircuit(*qc.qregs, *qc.cregs)
     qc1.append(evolution_instruction, range(qc.num_qubits))

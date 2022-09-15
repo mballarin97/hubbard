@@ -26,6 +26,7 @@ from tn_py_frontend.emulator import MPS
 import hubbard as hbb
 import hubbard.mps_observables as obs
 
+from repulsive_u_initial import build_circuit
 
 if __name__ == '__main__':
 
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     # Hopping constant, usually called J or t
     hopping_constant = 0.1
     # Onsite constant, usually called U
-    onsite_constant = -1
+    onsite_constant = 1
     # Chemical potential
     chemical_potential = -1#-0.001
     # Number of steps in the evolution
@@ -49,7 +50,9 @@ if __name__ == '__main__':
     # Number of timesteps for a fixed alpha
     num_timesteps_for_alpha = 100
     # dt for the evolution at each alpha
-    dt = 0.1
+    dt = 0.01
+
+    initial_state = "superposition"
 
     # Parameters dictionary for saving
     parameters_dict = {}
@@ -65,6 +68,7 @@ if __name__ == '__main__':
     parameters_dict['Ustep'] = False
     parameters_dict['dt'] = dt
     parameters_dict['steps_for_alpha'] = num_timesteps_for_alpha
+    parameters_dict["initial_state"] = initial_state
     conv_params = qtea.QCConvergenceParameters(max_bond_dimension=max_bond_dim, singval_mode='C')
 
     # Vertexes definition
@@ -88,19 +92,32 @@ if __name__ == '__main__':
 
     # ============= Initialize qiskit variables =============
     qancilla = AncillaRegister(1, 'a0')
-    cancillas = [ClassicalRegister(1, f'ca{ii}') for ii in range(len(plaquettes))]
+    cancillas = [ClassicalRegister(1, f'ca{ii}') for ii in range(len(plaquettes)+len(vertexes)+1)]
 
     # ============= Initialize Hubbard circuit =============
     regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas )
-    qc = hbb.initialize_chessboard(qc, regs)
+    if initial_state == "superposition":
+        #qc = hbb.initialize_superposition_chessboard(qc, regs, qancilla[0], cancillas[-1])
+        #qc.x(regs['q(0, 0)']['u'] )
+        #qc.x(regs['q(1, 1)']['d'] )
+        qc = build_circuit(qc, regs, qancilla, cancillas)
+    else:
+        qc = hbb.initialize_chessboard(qc, regs)
     original_qc = deepcopy(qc)
     for ii, pp in enumerate(plaquettes):
         qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
+    for ii, vv in enumerate(vertexes):
+        qc = hbb.apply_vertex_parity_stabilizer(qc, regs, qancilla, cancillas[ii], vv)
 
     qc.barrier()
-    evolution_instruction = hbb.adiabatic_operation(original_qc, regs, shape,
-            hopping_constant, onsite_constant, chemical_potential,
-            dt, num_trotter_steps)
+    if initial_state == "superposition":
+        evolution_instruction = hbb.superposition_adiabatic_operation(original_qc, regs, shape,
+                hopping_constant, onsite_constant,
+                dt, num_trotter_steps)
+    else:
+        evolution_instruction = hbb.adiabatic_operation(original_qc, regs, shape,
+                hopping_constant, onsite_constant, chemical_potential,
+                dt, num_trotter_steps)
     qc = _preprocess_qk(qc, True, optimization=3)
 
     # ============= Apply Evolution =============
@@ -133,7 +150,10 @@ if __name__ == '__main__':
 
     # Prepare the alphas linearly spaced in 0,1 and then add
     # a series of 1s for the final evolution
-    alphas = np.linspace(0, 1, alpha_steps, endpoint=True)
+    alphas = np.linspace(0, 0.2, alpha_steps//2, endpoint=True)
+    alphas = np.append(alphas, np.linspace(0.2, 1, alpha_steps//2) )
+    #alphas = np.linspace(0, 0.7, alpha_steps )
+    #alphas = np.append(alphas, np.linspace(0.7, 1, alpha_steps) )
     alphas = np.append(alphas, np.ones(final_time))
 
     # ================= Main loop, over the alphas =================
