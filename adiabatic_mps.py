@@ -15,7 +15,7 @@ from tqdm import tqdm
 import os
 import json
 
-from qiskit import QuantumCircuit, AncillaRegister, ClassicalRegister
+from qiskit import AncillaRegister, ClassicalRegister
 from qmatchatea import run_simulation
 import qmatchatea as qtea
 from qmatchatea.qk_utils import qk_transpilation_params
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # Number of steps in the evolution
     alpha_steps = 200
     # Maximum bond dimension of the simulation
-    max_bond_dim = 10000
+    max_bond_dim = 350
     # Number of evolution timesteps after the adiabatic process was over
     final_time = 100
     # Number of timesteps for a fixed alpha
@@ -133,9 +133,8 @@ if __name__ == '__main__':
         if idx == 0:
             approach = 'PY'
         else:
-            qc = deepcopy(evolution_circ)
-            qc = qc.bind_parameters( [alpha])
-            approach='SR'
+            qc = evolution_circ.bind_parameters( [alpha])
+            approach = 'SR'
 
         # Simulate the circuit
         qcio = qtea.QCIO(inPATH='temp/in/', outPATH='temp/out/', initial_state=initial_state)
