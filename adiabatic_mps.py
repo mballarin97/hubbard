@@ -12,10 +12,8 @@ from copy import deepcopy
 import numpy as np
 from tqdm import tqdm
 import os
-from shutil import rmtree
 
 from qiskit import QuantumCircuit, AncillaRegister, ClassicalRegister
-from qiskit.circuit import Parameter
 from qmatchatea import run_simulation
 import qmatchatea as qtea
 from qmatchatea.preprocessing import _preprocess_qk
@@ -32,7 +30,7 @@ if __name__ == '__main__':
 
     # ============= Initialize parameters of the simulation =============
     # Shape of the lattice
-    shape = (2, 2)
+    shape = (4, 4)
     # Number of trotterization steps for the single timestep
     num_trotter_steps = 1
     # Hopping constant, usually called J or t
@@ -42,7 +40,7 @@ if __name__ == '__main__':
     # Chemical potential
     chemical_potential = -1#-0.001
     # Number of steps in the evolution
-    alpha_steps = 1000
+    alpha_steps = 200
     # Maximum bond dimension of the simulation
     max_bond_dim = 10000
     # Number of evolution timesteps after the adiabatic process was over
@@ -96,11 +94,12 @@ if __name__ == '__main__':
 
     # ============= Initialize Hubbard circuit =============
     regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas )
-    if initial_state == "superposition":
-        #qc = hbb.initialize_superposition_chessboard(qc, regs, qancilla[0], cancillas[-1])
-        #qc.x(regs['q(0, 0)']['u'] )
-        #qc.x(regs['q(1, 1)']['d'] )
-        qc = build_circuit(qc, regs, qancilla, cancillas)
+    if onsite_constant>0:
+        qc = hbb.initialize_repulsive_rows(qc, regs, qancilla, cancillas[-1], shape)
+    elif initial_state == "superposition":
+        qc = hbb.initialize_superposition_chessboard(qc, regs, qancilla[0], cancillas[-1])
+        qc.x(regs['q(0, 0)']['u'] )
+        qc.x(regs['q(1, 1)']['d'] )
     else:
         qc = hbb.initialize_chessboard(qc, regs)
     original_qc = deepcopy(qc)
@@ -124,7 +123,6 @@ if __name__ == '__main__':
     u_and_d_exps = np.zeros((alpha_steps+final_time, 2*len(regs)) )
     ud_exps = np.zeros((alpha_steps+final_time, len(regs)) )
     entanglement_matter_links_exps = np.zeros(alpha_steps+final_time)
-    idx = 0
 
     initial_state='Vacuum'
 
@@ -150,32 +148,39 @@ if __name__ == '__main__':
 
     # Prepare the alphas linearly spaced in 0,1 and then add
     # a series of 1s for the final evolution
-    alphas = np.linspace(0, 0.2, alpha_steps//2, endpoint=True)
-    alphas = np.append(alphas, np.linspace(0.2, 1, alpha_steps//2) )
+    alphas = np.linspace(0, 1, alpha_steps, endpoint=True)
+    #alphas = np.linspace(0, 0.2, alpha_steps//2, endpoint=True)
+    #alphas = np.append(alphas, np.linspace(0.2, 1, alpha_steps//2) )
     #alphas = np.linspace(0, 0.7, alpha_steps )
     #alphas = np.append(alphas, np.linspace(0.7, 1, alpha_steps) )
     alphas = np.append(alphas, np.ones(final_time))
 
     # ================= Main loop, over the alphas =================
+    idx = 0
     for alpha in tqdm(alphas):
         # ===== Inner loop, for each alpha evolve for 10 timesteps =====
-        for jj in range(num_timesteps_for_alpha):
-            # Start from the state at the previous timestep
-            if idx > 0 or jj>0:
-                qc = deepcopy(evolution_circ)
-                qc = qc.bind_parameters( [alpha])
+        if idx == 0:
+            approach = 'PY'
+        else:
+            qc = deepcopy(evolution_circ)
+            qc = qc.bind_parameters( [alpha])
+            qc_temp = deepcopy(qc)
+            for jj in range(num_timesteps_for_alpha):
+                # Start from the state at the previous timestep
+                qc = qc.compose(qc_temp, range(qc.num_qubits))
+            approach='SR'
 
-            # Simulate the circuit
-            qcio = qtea.QCIO(inPATH='temp/in/', outPATH='temp/out/', initial_state=initial_state)
-            res = run_simulation(qc,
-                                convergence_parameters=conv_params,
-                                io_info=qcio,
-                                observables=qc_obs,
-                                operators=qc_ops,
-                                approach='PY',
-                                transpilation_parameters=qk_transpilation_params(False)
-                                )
-            initial_state = MPS.from_tensor_list(res.mps, conv_params)
+        # Simulate the circuit
+        qcio = qtea.QCIO(inPATH='temp/in/', outPATH='temp/out/', initial_state=initial_state)
+        res = run_simulation(qc,
+                            convergence_parameters=conv_params,
+                            io_info=qcio,
+                            observables=qc_obs,
+                            operators=qc_ops,
+                            approach=approach,
+                            transpilation_parameters=qk_transpilation_params(False)
+                            )
+        initial_state = MPS.from_tensor_list(res.mps, conv_params)
 
         # Extract observables for each alpha (NOT EACH TIMESTEP)
         for ii, site in enumerate(regs.values()):

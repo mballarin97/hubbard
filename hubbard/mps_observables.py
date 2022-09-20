@@ -82,3 +82,44 @@ def updown_observable(qc, regs):
         observables.append( obs.TNObsTensorProduct(site.name+'ud', ['z', 'z'], qidxs) )
 
     return observables
+
+def correlators(qc, regs):
+    """
+    Return the observables to measure the expectation values of the
+    PRODUCT up and down matter in each site.
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        Quantum circuit describing the Hubbard model
+    regs : HubbardRegister
+        HubbardRegister of the simulation
+
+    Returns
+    -------
+    list
+        list of the expectation values. The order of measurement
+        is the same you get by calling HubbardRegister.values()
+    """
+    # Total number of qubits
+    num_qubs = qc.num_qubits
+
+    observables = []
+    matter = ['u', 'd']
+    regs_vals = list(regs.values())
+    for ii, site_1 in enumerate(regs_vals):
+        for site_2 in regs_vals[ii+1:]:
+            qidxs = []
+            for mm1 in matter:
+                for mm2 in matter:
+                    # Prepare the operator, it just have Z on the matter
+                    # of the site
+                    qubit1 = site_1[mm1]
+                    qubit2 = site_2[mm2]
+                    qidxs.append( [[ qc.find_bit(qubit1).index], [qc.find_bit(qubit2).index] ] )
+
+                    observables.append(
+                        obs.TNObsTensorProduct(site_1.name+site_2.name+mm1+mm2, ['z', 'z'], qidxs)
+                        )
+
+    return observables

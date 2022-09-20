@@ -11,7 +11,8 @@
 from qiskit import QuantumCircuit
 from .registers import HubbardRegister
 
-__all__ = ['hubbard_circuit', 'initialize_chessboard', 'initialize_superposition_chessboard']
+__all__ = ['hubbard_circuit', 'initialize_chessboard', 'initialize_superposition_chessboard',
+            'initialize_repulsive_rows']
 
 def hubbard_circuit(shape, ancilla_register, classical_registers, ordering=None):
     """
@@ -132,6 +133,89 @@ def initialize_superposition_chessboard(qc, regs, ancilla, cl_reg, correct=True,
     qc.reset(ancilla)
 
     if final_barrier:
+        qc.barrier()
+
+    return qc
+
+def initialize_repulsive_rows(qc, regs, ancilla, cl_reg, shape):
+    """
+    Initialize the hubbard state with two particles in each
+    row, while respecting the stabilizers constraints
+
+    .. code-block::
+
+        10 -1- 01   01 -1- 10   00 -0- 00   00 -0- 00
+        |       |   |       |   |       |   |       |
+        0       0 + 0       0 + 0       0 + 0       0
+        |       |   |       |   |       |   |       |
+        00 -0- 00   00 -0- 00   10 -1- 01   01 -1- 10
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        The Hubbard quantum circuit
+    regs : dict
+        The dictionary of the site registers
+    ancilla : QuantumRegister
+        ancilla register for measurement
+    cl_reg : ClassicalRegister
+        Classical register index where to store the measurement
+    shape : tuple
+        Shape of the matter lattice
+
+
+    Returns
+    -------
+    QuantumCircuit
+        The quantum circuit with the initialization
+    """
+
+    # Create upper row
+    qc.h(regs[f'q(0, {shape[1]-1})']['u'])
+    for ii in range(shape[0]):
+        if (ii+shape[1]-1)%2 == 1:
+            from_r, to_r = 'u', 'd'
+        else:
+            from_r, to_r = 'd', 'u'
+        # Apply cx in the same site
+        qc.cx(regs[f'q({ii}, {shape[1]-1})'][from_r],
+                regs[f'q({ii}, {shape[1]-1})'][to_r])
+        if ii == shape[0]-1:
+            continue
+        # Apply cx to next site
+        qc.cx(regs[f'q({ii}, {shape[1]-1})'][to_r],
+                regs[f'q({ii+1}, {shape[1]-1})'][to_r])
+
+        if ii%2==0:
+            qc.x(regs[f'q({ii}, {shape[1]-1})']['e'] )
+
+    # flip the bits to have only one particle per site
+    for ii in range(shape[0]):
+        if (ii+shape[1]-1)%2 == 1:
+            qc.x(regs[f'q({ii}, {shape[1]-1})']['u'] )
+        else:
+            qc.x(regs[f'q({ii}, {shape[1]-1})']['d'] )
+    qc.barrier()
+
+    # Complete with the other rows
+    for jj in range(shape[1]-1, 0, -1):
+        qc.h(ancilla[0])
+        for ii in range(shape[0]):
+            for mm in ('u', 'd'):
+                qc.cswap(ancilla[0],
+                            regs[f'q({ii}, {jj-1})'][mm],
+                            regs[f'q({ii}, {jj})'][mm]
+                        )
+            if ii != shape[0]-1:
+                qc.cswap(ancilla[0],
+                            regs[f'q({ii}, {jj-1})']['e'],
+                            regs[f'q({ii}, {jj})']['e']
+                        )
+        qc.h(ancilla[0])
+        qc.measure(ancilla[0], cl_reg[0])
+        qc.z(regs[f'q({ii}, {jj})']['u']).c_if( cl_reg, 1)
+        qc.z(regs[f'q({ii}, {jj})']['d']).c_if( cl_reg, 1)
+        qc.reset(ancilla[0])
         qc.barrier()
 
     return qc
