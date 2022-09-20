@@ -9,36 +9,36 @@
 # that they have been altered from the originals.
 
 from copy import deepcopy
+import pickle
 import numpy as np
 from tqdm import tqdm
 import os
+import json
 
 from qiskit import QuantumCircuit, AncillaRegister, ClassicalRegister
 from qmatchatea import run_simulation
 import qmatchatea as qtea
-from qmatchatea.preprocessing import _preprocess_qk
 from qmatchatea.qk_utils import qk_transpilation_params
-from tn_py_frontend.observables import TNObservables, TNObsBondEntropy, TNState2File
+from tn_py_frontend.observables import TNObservables, TNObsBondEntropy, TNState2File, TNObsLocal
 from tn_py_frontend.emulator import MPS
 
 import hubbard as hbb
 import hubbard.mps_observables as obs
 
-from repulsive_u_initial import build_circuit
 
 if __name__ == '__main__':
 
     # ============= Initialize parameters of the simulation =============
+    preproc_dir = "initial_states"
+    with open(os.path.join(preproc_dir, "params.json"), 'rb') as fh:
+        params = json.load(fh)
+
     # Shape of the lattice
-    shape = (4, 4)
-    # Number of trotterization steps for the single timestep
-    num_trotter_steps = 1
+    shape = params["shape"]
     # Hopping constant, usually called J or t
-    hopping_constant = 0.1
+    hopping_constant = params["hopping_constant"]
     # Onsite constant, usually called U
-    onsite_constant = 1
-    # Chemical potential
-    chemical_potential = -1#-0.001
+    onsite_constant = params["onsite_constant"]
     # Number of steps in the evolution
     alpha_steps = 200
     # Maximum bond dimension of the simulation
@@ -46,27 +46,20 @@ if __name__ == '__main__':
     # Number of evolution timesteps after the adiabatic process was over
     final_time = 100
     # Number of timesteps for a fixed alpha
-    num_timesteps_for_alpha = 100
+    num_timesteps_for_alpha = params["num_timesteps_for_alpha"]
+    # Number of trotterization steps for the single timestep
+    num_trotter_steps = num_timesteps_for_alpha
     # dt for the evolution at each alpha
-    dt = 0.01
-
-    initial_state = "superposition"
+    dt = params["dt"]
+    # If True, compute correlators
+    compute_correlators = False
 
     # Parameters dictionary for saving
-    parameters_dict = {}
-    parameters_dict['U'] = onsite_constant
-    parameters_dict['t'] = hopping_constant
-    parameters_dict['mu'] = chemical_potential
-    parameters_dict['mps'] = True
-    parameters_dict['chi'] = max_bond_dim
-    parameters_dict['num_trotter_steps'] = num_trotter_steps
-    parameters_dict['num_timesteps'] = alpha_steps + final_time
-    parameters_dict['shape'] = shape
-    parameters_dict['adiabatic'] = True
-    parameters_dict['Ustep'] = False
-    parameters_dict['dt'] = dt
-    parameters_dict['steps_for_alpha'] = num_timesteps_for_alpha
-    parameters_dict["initial_state"] = initial_state
+    params['chi'] = max_bond_dim
+    params['num_timesteps'] = alpha_steps + final_time
+    params.pop("num_timesteps_before_measurement")
+    params.pop("evolution_circ_generation_time")
+    params.pop("evolution_step_num_2qubit_gates")
     conv_params = qtea.QCConvergenceParameters(max_bond_dimension=max_bond_dim, singval_mode='C')
 
     # Vertexes definition
@@ -86,73 +79,51 @@ if __name__ == '__main__':
     if not os.path.isdir(dir_name):
         os.mkdir(dir_name)
     with open(os.path.join(dir_name, 'params.json'), 'w') as fh:
-        hbb.write_json(parameters_dict, fh)
+        json.dump(params, fh, indent=4)
 
     # ============= Initialize qiskit variables =============
     qancilla = AncillaRegister(1, 'a0')
     cancillas = [ClassicalRegister(1, f'ca{ii}') for ii in range(len(plaquettes)+len(vertexes)+1)]
+    with open(os.path.join(preproc_dir, "repulsive_adiabatic.pkl"), "rb") as fh:
+        evolution_circ = pickle.load(fh)
 
     # ============= Initialize Hubbard circuit =============
-    regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas )
-    if onsite_constant>0:
-        qc = hbb.initialize_repulsive_rows(qc, regs, qancilla, cancillas[-1], shape)
-    elif initial_state == "superposition":
-        qc = hbb.initialize_superposition_chessboard(qc, regs, qancilla[0], cancillas[-1])
-        qc.x(regs['q(0, 0)']['u'] )
-        qc.x(regs['q(1, 1)']['d'] )
-    else:
-        qc = hbb.initialize_chessboard(qc, regs)
-    original_qc = deepcopy(qc)
-    for ii, pp in enumerate(plaquettes):
-        qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
-    for ii, vv in enumerate(vertexes):
-        qc = hbb.apply_vertex_parity_stabilizer(qc, regs, qancilla, cancillas[ii], vv)
-
-    qc.barrier()
-    if initial_state == "superposition":
-        evolution_instruction = hbb.superposition_adiabatic_operation(original_qc, regs, shape,
-                hopping_constant, onsite_constant,
-                dt, num_trotter_steps)
-    else:
-        evolution_instruction = hbb.adiabatic_operation(original_qc, regs, shape,
-                hopping_constant, onsite_constant, chemical_potential,
-                dt, num_trotter_steps)
-    qc = _preprocess_qk(qc, True, optimization=3)
-
-    # ============= Apply Evolution =============
-    u_and_d_exps = np.zeros((alpha_steps+final_time, 2*len(regs)) )
-    ud_exps = np.zeros((alpha_steps+final_time, len(regs)) )
-    entanglement_matter_links_exps = np.zeros(alpha_steps+final_time)
-
-    initial_state='Vacuum'
-
-    qc1 = QuantumCircuit(*qc.qregs, *qc.cregs)
-    qc1.append(evolution_instruction, range(qc.num_qubits))
-    #print(_preprocess_qk(qc1, False, basis_gates=['u', 'cx', 'p', 'h', 'swap']))
-    evolution_circ = _preprocess_qk(qc1, True, basis_gates=['u', 'cx', 'p', 'h', 'swap'], optimization=3)
+    regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas, params["ordering"] )
+    tensor_list = qtea.read_mps(os.path.join(preproc_dir, "initial_repulsive.txt"))
+    initial_state = MPS.from_tensor_list(tensor_list, conv_params)
+    qregs_names = [qreg.name for qreg in qc.qregs]
 
     # ============= Prepare observables =============
+    z_on_qubits = np.zeros((alpha_steps+final_time, qc.num_qubits) )
+    ud_exps = np.zeros((alpha_steps+final_time, len(regs)) )
+    entanglement = np.zeros((alpha_steps+final_time, qc.num_qubits-1))
+    # Initialize pauli matrices operators
     qc_ops = qtea.QCOperators()
     qc_ops.ops['z'] = np.array([[1, 0], [0, -1]])
     qc_ops.ops['y'] = np.array([[0, -1j], [1j, 0]])
     qc_ops.ops['x'] = np.array([[0, 1], [1, 0]])
+    # Initialize observables
     qc_obs = TNObservables()
-    u_and_d_obs = obs.up_and_down_observable(original_qc, regs)
-    for u_and_d in u_and_d_obs:
-        qc_obs += u_and_d
-    ud_obs = obs.updown_observable(original_qc, regs)
-    for ud in ud_obs:
+    # Local observables, Z on each qubit
+    qc_obs += TNObsLocal('z', 'z')
+    # Double occupancy of the sites
+    ud_names, uds = obs.updown_observable(qc, regs)
+    for ud in uds:
         qc_obs += ud
+    if compute_correlators:
+        # Correlators
+        corr_names, correlators = obs.correlators(qc, regs)
+        for correlator in correlators:
+            qc_obs += correlator
+        correlators = np.zeros((alpha_steps+final_time, len(correlators)) )
+    # Entanglement profile
     qc_obs += TNObsBondEntropy()
+    # Save the state
     qc_obs += TNState2File('state.txt', 'F')
 
     # Prepare the alphas linearly spaced in 0,1 and then add
     # a series of 1s for the final evolution
     alphas = np.linspace(0, 1, alpha_steps, endpoint=True)
-    #alphas = np.linspace(0, 0.2, alpha_steps//2, endpoint=True)
-    #alphas = np.append(alphas, np.linspace(0.2, 1, alpha_steps//2) )
-    #alphas = np.linspace(0, 0.7, alpha_steps )
-    #alphas = np.append(alphas, np.linspace(0.7, 1, alpha_steps) )
     alphas = np.append(alphas, np.ones(final_time))
 
     # ================= Main loop, over the alphas =================
@@ -164,10 +135,6 @@ if __name__ == '__main__':
         else:
             qc = deepcopy(evolution_circ)
             qc = qc.bind_parameters( [alpha])
-            qc_temp = deepcopy(qc)
-            for jj in range(num_timesteps_for_alpha):
-                # Start from the state at the previous timestep
-                qc = qc.compose(qc_temp, range(qc.num_qubits))
             approach='SR'
 
         # Simulate the circuit
@@ -183,21 +150,23 @@ if __name__ == '__main__':
         initial_state = MPS.from_tensor_list(res.mps, conv_params)
 
         # Extract observables for each alpha (NOT EACH TIMESTEP)
-        for ii, site in enumerate(regs.values()):
-            name = site.name
-            ud_exps[idx, ii] = np.real(res.observables[name+'ud'])
-        temp = []
-        for mm in ('u', 'd'):
-            for site in regs.values():
-                name = site.name
-                temp.append(np.real(res.observables[name+mm]))
-        u_and_d_exps[idx, :] = temp
-        entanglement_matter_links_exps[idx] = res.entanglement[(num_links-1, num_links)]*np.log2(np.e)
+        for ii, name in enumerate(ud_names):
+            ud_exps[idx, ii] = np.real(res.observables[name])
+        z_on_qubits[idx, :] = res.observables['z']
+        entanglement[idx, :] = np.array(list(res.entanglement.values()))*np.log2(np.e)
+        if compute_correlators:
+            for ii, name in enumerate(corr_names):
+                correlators[idx, ii] = np.real(res.observables[name])
 
         idx += 1
-        np.savetxt(os.path.join(dir_name, 'u_and_d.txt'), u_and_d_exps[:idx, :])
-        np.savetxt(os.path.join(dir_name, 'ud.txt'), ud_exps[:idx, :])
-        np.savetxt(os.path.join(dir_name, 'entanglement_matter_link.txt'), entanglement_matter_links_exps[:idx])
+        np.savetxt(os.path.join(dir_name, 'z_on_qubits.txt'), z_on_qubits[:idx, :],
+                    header=' '.join(qregs_names) )
+        np.savetxt(os.path.join(dir_name, 'ud.txt'), ud_exps[:idx, :],
+                    header=' '.join(ud_names) )
+        np.savetxt(os.path.join(dir_name, 'entanglement.txt'), entanglement[:idx, :])
+        if compute_correlators:
+            np.savetxt(os.path.join(dir_name, 'correlators.txt'), correlators[:idx, :],
+                        header=' '.join(corr_names))
 
     # Save final state
     initial_state.write(os.path.join(dir_name, 'mps_state.txt'))

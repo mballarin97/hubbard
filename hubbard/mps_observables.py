@@ -66,11 +66,9 @@ def updown_observable(qc, regs):
         list of the expectation values. The order of measurement
         is the same you get by calling HubbardRegister.values()
     """
-    # Total number of qubits
-    num_qubs = qc.num_qubits
-
     observables = []
     matter = ['u', 'd']
+    names = []
     for site in regs.values():
         qidxs = []
         for mm in matter:
@@ -78,10 +76,11 @@ def updown_observable(qc, regs):
             # of the site
             qubit = site[mm]
             qidxs.append( [ qc.find_bit(qubit).index] )
+        name = site.name+'ud'
+        names.append(name)
+        observables.append( obs.TNObsTensorProduct(name, ['z', 'z'], qidxs) )
 
-        observables.append( obs.TNObsTensorProduct(site.name+'ud', ['z', 'z'], qidxs) )
-
-    return observables
+    return names, observables
 
 def correlators(qc, regs):
     """
@@ -101,25 +100,25 @@ def correlators(qc, regs):
         list of the expectation values. The order of measurement
         is the same you get by calling HubbardRegister.values()
     """
-    # Total number of qubits
-    num_qubs = qc.num_qubits
-
     observables = []
     matter = ['u', 'd']
     regs_vals = list(regs.values())
+    names = []
     for ii, site_1 in enumerate(regs_vals):
         for site_2 in regs_vals[ii+1:]:
-            qidxs = []
             for mm1 in matter:
                 for mm2 in matter:
+
                     # Prepare the operator, it just have Z on the matter
                     # of the site
                     qubit1 = site_1[mm1]
                     qubit2 = site_2[mm2]
-                    qidxs.append( [[ qc.find_bit(qubit1).index], [qc.find_bit(qubit2).index] ] )
+                    qidxs = [[ qc.find_bit(qubit1).index], [qc.find_bit(qubit2).index] ]
 
+                    name = site_1.name+site_2.name+mm1+mm2
                     observables.append(
-                        obs.TNObsTensorProduct(site_1.name+site_2.name+mm1+mm2, ['z', 'z'], qidxs)
+                        obs.TNObsTensorProduct(name, ['z', 'z'], qidxs)
                         )
+                    names.append(name)
 
-    return observables
+    return names, observables
