@@ -6,20 +6,26 @@ import hubbard as hbb
 import numpy as np
 from qiskit import AncillaRegister, ClassicalRegister, QuantumCircuit
 from qmatchatea import run_simulation, QCConvergenceParameters, write_mps
+from qmatchatea.qk_utils import qk_transpilation_params
 from qmatchatea.preprocessing import _preprocess_qk
 import tn_py_frontend.observables as obs
 
 dir = "initial_states"
-shape = (4, 4)
+shape = (4, 2)
 hopping_constant = 0.1
 onsite_constant = 1
 dt = 0.01
 num_timesteps_for_alpha = 100
 num_timesteps_before_measurement = 10
-ordering = [24, 12, 25, 1, 13, 26, 14, 27, 3, 31, 17, 2, 30, 16, 5, 29,
-            15, 0, 28, 4, 32, 18, 9, 33, 19, 6, 34, 20, 7, 35, 11, 39,
-            23, 10, 38, 22, 37, 21, 8, 36]
+# 4x4 ordering
+#ordering = [24, 12, 25, 1, 13, 26, 14, 27, 3, 31, 17, 2, 30, 16, 5, 29,
+#            15, 0, 28, 4, 32, 18, 9, 33, 19, 6, 34, 20, 7, 35, 11, 39,
+#             23, 10, 38, 22, 37, 21, 8, 36]
 
+# 4x2 ordering
+ordering = [ 14, 0, 10, 4, 11, 1, 7, 15, 8, 16, 2, 5, 12, 6, 13, 3, 9, 17
+
+]
 params = {
     'shape' : shape,
     'ordering' : ordering,
@@ -30,6 +36,10 @@ params = {
     'num_timesteps_before_measurement' : num_timesteps_before_measurement
 }
 
+linear_params = qk_transpilation_params(True, basis_gates=['u', 'cx', 'p', 'h', 'swap'],
+                        optimization=3, tensor_compiler=True)
+generic_params = qk_transpilation_params(False, basis_gates=['u', 'cx', 'p', 'h', 'swap'],
+                        optimization=3, tensor_compiler=False)
 if __name__ == '__main__':
 
     # =================== Initialize variables ===================
@@ -52,7 +62,7 @@ if __name__ == '__main__':
     obsv = obs.TNObservables()
     obsv += obs.TNObsProbabilities(num_samples=10000)
     obsv += obs.TNState2File("state", "F")
-    conv_params = QCConvergenceParameters(50)
+    conv_params = QCConvergenceParameters(500)
     start = time.time()
     res = run_simulation(qc, convergence_parameters= conv_params, approach='PY', observables=obsv)
     params['mps_simulation_time'] = time.time()-start
@@ -75,9 +85,11 @@ if __name__ == '__main__':
                 dt*num_timesteps_for_alpha, num_timesteps_for_alpha)
     qc1 = QuantumCircuit(*qc.qregs, *qc.cregs)
     qc1.append(adiabatic_instruction, range(qc.num_qubits))
-    adiabatic_circ = _preprocess_qk(qc1, True, basis_gates=['u', 'cx', 'p', 'h', 'swap'], optimization=3)
-    params['adiabatic_circ_generation_time'] = time.time()-start
+    adiabatic_circ = _preprocess_qk(qc1, generic_params)
     params['adiabatic_step_num_2qubit_gates'] = int(adiabatic_circ.num_nonlocal_gates())
+    adiabatic_circ = _preprocess_qk(qc1, linear_params)
+    params['adiabatic_circ_generation_time'] = time.time()-start
+    params['adiabatic_step_num_2qubit_gates_1d'] = int(adiabatic_circ.num_nonlocal_gates())
 
     # =================== Save adiabatic evolution circuit ===================
     with open(os.path.join(dir, "repulsive_adiabatic.pkl"), "wb") as fh:
@@ -91,9 +103,11 @@ if __name__ == '__main__':
                 dt*num_timesteps_before_measurement, num_timesteps_before_measurement)
     qc1 = QuantumCircuit(*qc.qregs, *qc.cregs)
     qc1.append(adiabatic_instruction, range(qc.num_qubits))
-    evolution_circ = _preprocess_qk(qc1, True, basis_gates=['u', 'cx', 'p', 'h', 'swap'], optimization=3)
+    evolution_circ = _preprocess_qk(qc1, generic_params)
+    params['evolution_step_num_2qubit_gates'] = int(evolution_circ.num_nonlocal_gates())
+    evolution_circ = _preprocess_qk(qc1, linear_params)
     params['evolution_circ_generation_time'] = time.time()-start
-    params['evolution_step_num_2qubit_gates'] = int(adiabatic_circ.num_nonlocal_gates())
+    params['evolution_step_num_2qubit_gates_1d'] = int(adiabatic_circ.num_nonlocal_gates())
 
     # =================== Save evolution circuit ===================
     with open(os.path.join(dir, "repulsive_evolution.pkl"), "wb") as fh:

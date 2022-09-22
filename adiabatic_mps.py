@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # Number of steps in the evolution
     alpha_steps = 200
     # Maximum bond dimension of the simulation
-    max_bond_dim = 350
+    max_bond_dim = 1000
     # Number of evolution timesteps after the adiabatic process was over
     final_time = 100
     # Number of timesteps for a fixed alpha
@@ -128,13 +128,14 @@ if __name__ == '__main__':
 
     # ================= Main loop, over the alphas =================
     idx = 0
+    singvals = []
     for alpha in tqdm(alphas):
         # ===== Inner loop, for each alpha evolve for 10 timesteps =====
         if idx == 0:
             approach = 'PY'
         else:
             qc = evolution_circ.bind_parameters( [alpha])
-            approach = 'SR'
+            approach = 'PY'
 
         # Simulate the circuit
         qcio = qtea.QCIO(inPATH='temp/in/', outPATH='temp/out/', initial_state=initial_state)
@@ -148,6 +149,7 @@ if __name__ == '__main__':
                             )
         initial_state = MPS.from_tensor_list(res.mps, conv_params)
 
+
         # Extract observables for each alpha (NOT EACH TIMESTEP)
         for ii, name in enumerate(ud_names):
             ud_exps[idx, ii] = np.real(res.observables[name])
@@ -156,6 +158,7 @@ if __name__ == '__main__':
         if compute_correlators:
             for ii, name in enumerate(corr_names):
                 correlators[idx, ii] = np.real(res.observables[name])
+        singvals = np.hstack((singvals, res.singular_values_cut))
 
         idx += 1
         np.savetxt(os.path.join(dir_name, 'z_on_qubits.txt'), z_on_qubits[:idx, :],
@@ -166,6 +169,7 @@ if __name__ == '__main__':
         if compute_correlators:
             np.savetxt(os.path.join(dir_name, 'correlators.txt'), correlators[:idx, :],
                         header=' '.join(corr_names))
+        np.savetxt( os.path.join(dir_name, 'singvals.txt'), singvals)
 
     # Save final state
     initial_state.write(os.path.join(dir_name, 'mps_state.txt'))

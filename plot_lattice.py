@@ -25,6 +25,8 @@ qubit_final_ordering = qubit_initial_ordering[ordering, :]
 ax.plot(qubit_final_ordering[:, 0], qubit_final_ordering[:, 1], lw=5, color='forestgreen', alpha=0.5, label='1d mapping')
 
 ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
-          ncol=3, fancybox=True, shadow=True)
+          ncol=3, fancybox=True, shadow=True, fontsize=14)
+plt.tight_layout()
+plt.savefig('1d_mapping.pdf')
 
 plt.show()

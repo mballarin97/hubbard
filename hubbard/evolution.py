@@ -194,8 +194,8 @@ def evolution_operation(qc, regs, shape,
     """
 
     # Links available in lattice of given shape
-    vert_links = [f'lv{ii}' for ii in range(shape[1]*(shape[0]-1))]
-    horiz_links = [f'lh{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    vert_links = [f'lv{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    horiz_links = [f'lh{ii}' for ii in range(shape[1]*(shape[0]-1))]
     avail_links = vert_links + horiz_links
 
     hubbard_hamiltonian = {}
@@ -463,8 +463,8 @@ def superposition_adiabatic_operation(qc, regs, shape,
     """
     alpha = Parameter('α')
     # Links available in lattice of given shape
-    vert_links = [f'lv{ii}' for ii in range(shape[1]*(shape[0]-1))]
-    horiz_links = [f'lh{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    vert_links = [f'lv{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    horiz_links = [f'lh{ii}' for ii in range(shape[1]*(shape[0]-1))]
     avail_links = vert_links + horiz_links
 
     total_hamiltonian = {}

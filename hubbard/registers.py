@@ -145,8 +145,8 @@ class HubbardRegister():
 
     def __init__(self, shape, ordering=None):
 
-        vert_links = [ii for ii in range(shape[1]*(shape[0]-1))]
-        horiz_links = [ii for ii in range(shape[0]*(shape[1]-1))]
+        vert_links = [ii for ii in range(shape[0]*(shape[1]-1))]
+        horiz_links = [ii for ii in range(shape[1]*(shape[0]-1))]
         links_qr = {}
         for link_idx in vert_links:
             links_qr[f'lv{link_idx}'] = QuantumRegister(1, f'lv{link_idx}')

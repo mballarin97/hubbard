@@ -85,7 +85,7 @@ def build_circuit(qc, regs, qancilla, cancillas, shape):
 if __name__ == '__main__':
     # Simulation backend
     backend = StatevectorSimulator(precision='double')
-    shape = (4, 4)
+    shape = (4, 2)
     # Initialize ancilla bits
     qancilla = AncillaRegister(1, 'a0')
     cancillas = [ClassicalRegister(1, 'ca0'),ClassicalRegister(1, 'ca1')]
