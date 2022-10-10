@@ -153,10 +153,12 @@ def apply_vertex_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx, correct=
 
     if correct:
         # Apply a controlled x operation
-        if site_idx[0] >0:
-            qc.x(site_reg['w']).c_if(cl_reg, 1)
-        else:
+        if "e" in site_reg._keys:
             qc.x(site_reg['e']).c_if(cl_reg, 1)
+        elif "n" in site_reg._keys:
+            qc.x(site_reg['n']).c_if(cl_reg, 1)
+        else:
+            qc.x(site_reg['s']).c_if(cl_reg, 1)
 
     # Reset the ancilla
     qc.reset(ancilla)

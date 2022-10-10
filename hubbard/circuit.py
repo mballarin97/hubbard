@@ -219,3 +219,38 @@ def initialize_repulsive_rows(qc, regs, ancilla, cl_reg, shape):
         qc.barrier()
 
     return qc
+
+def initialize_for_chemical_charge(qc, regs, final_barrier=True):
+    """
+    Initialize the hubbard state with the chessboard
+
+    .. code-block::
+
+        2 - 0 - 2 - 0
+        0 - 2 - 0 - 2
+        2 - 0 - 2 - 0
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        The Hubbard quantum circuit
+    regs : dict
+        The dictionary of the site registers
+    final_barrier : bool, optional
+        If True, put a barrier after the initialization.
+        Default to True
+
+    Returns
+    -------
+    QuantumCircuit
+        The quantum circuit with the initialization
+    """
+    for reg in regs.values():
+        if reg.is_even:
+            qc.x(reg['u'])
+            qc.x(reg['d'])
+
+    if final_barrier:
+        qc.barrier()
+
+    return qc

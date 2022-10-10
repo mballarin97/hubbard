@@ -13,157 +13,17 @@ import numpy as np
 
 import pickle
 from qiskit import QuantumCircuit, AncillaRegister, ClassicalRegister
+from qiskit.extensions import UnitaryGate
 from qiskit.circuit import Parameter
-from qmatchatea.preprocessing import _preprocess_qk
+from qmatchatea.preprocessing import _preprocess_qk, qk_transpilation_params
 from .qiskit_pauli import WeightedPauliOperator
-from .operators import generate_hopping, from_operators_to_pauli_dict
+from .operators import generate_global_hopping, generate_global_onsite
+from .operators import from_operators_to_pauli_dict, generate_chemical_potential
 from .circuit import hubbard_circuit
 
 __all__ = ['evolution_operation', 'insert_noise', 'generate_evolution_circuit',
-            'adiabatic_operation', 'superposition_adiabatic_operation']
-
-def generate_global_hopping(qc, regs, link_idx, species, coupling=1):
-    """
-    Generate the hopping operators of the hamiltonian given the
-    jordan-wigner transformation. Thus, the output are Pauli strings.
-    The operator is global in the sense that is padded with identities.
-
-    Parameters
-    ----------
-    qc : :py:class:`QuantumCircuit`
-        Quantum circuit class containing the Hubbard circuit
-    regs : dict
-        Dictionary of the SiteRegisters
-    link_idx : tuple
-        Unique identifier of the link where the hopping will take place
-    species : str
-        Matter species involved in the hopping
-    coupling : float, optional
-        Coupling in the link
-
-    Return
-    ------
-    dict
-        Dictionary where the keys are the global hopping operator
-        and its hermitian conjugate, the values are their coefficients
-
-    Example
-    -------
-    We report here an example of the link numbering
-
-    .. code-block::
-
-          q-h6-q-h7-q-h8-q
-          |    |    |    |
-         v4    v5   v6   v7
-          |    |    |    |
-          q-h3-q-h4-q-h5-q
-          |    |    |    |
-         v0    v1   v2   v3
-          |    |    |    |
-          q-h0-q-h1-q-h2-q
-    """
-    # Generate the local operator, defined only on the interested
-    # registers
-    local_operators, (from_site_reg, to_site_reg) = generate_hopping(regs, link_idx, species)
-    operators = local_operators.keys()
-    num_qubs = qc.num_qubits
-
-    # List to keep track of already visited qubits
-    already_visited = []
-    # Generate the global operators, padded with identities
-    global_operator = [ ['I']*num_qubs, ['I']*num_qubs ]
-    operators = [op.split('⊗') for op in operators]
-
-    # Prepare the global operator of the first dressed site
-    rishons = from_site_reg._keys
-    for ii, rr in enumerate(rishons):
-        qubit = from_site_reg[rr]
-        # Keep track of visited qubits to avoid double
-        # operations on the shared rishons
-        already_visited.append(qubit.register.name)
-        # Retrieve the correct index of the qubit
-        qidx = qc.find_bit(qubit).index
-        for jj in range(2):
-            global_operator[jj][qidx] = operators[jj][0][ii]
-
-    # Prepare the global operator of the second dressed site
-    rishons = to_site_reg._keys
-    for ii, rr in enumerate(rishons):
-        qubit = to_site_reg[rr]
-        # Skip the already visited rishons
-        if qubit.register.name in already_visited:
-            continue
-        # Retrieve the correct index of the qubit
-        qidx = qc.find_bit(qubit).index
-        for jj in range(2):
-            global_operator[jj][qidx] = operators[jj][1][ii]
-
-    # Pass from list of characters to string, inverting the ordering
-    # to satisfy qiskit convention
-    global_operator = [''.join(gl[::-1]) for gl in global_operator]
-
-    # Multiply the constants by the value of the coupling
-    values = coupling * np.array(list(local_operators.values()))
-    return dict(zip(global_operator, values) )
-
-def generate_global_onsite(qc, regs, site_idx, potential=1):
-    """
-    Generate the onsite operators of the hamiltonian given the
-    jordan-wigner transformation. Thus, the output are Pauli strings.
-    The operator is global in the sense that is padded with identities.
-
-    Parameters
-    ----------
-    qc : :py:class:`QuantumCircuit`
-        Quantum circuit class containing the Hubbard circuit
-    regs : dict
-        Dictionary of the SiteRegisters
-    link_idx : tuple
-        Unique identifier of the link where the hopping will take place
-    species : str
-        Matter species involved in the hopping
-    potential : 1
-        Value of the coefficient of the potential
-
-    Return
-    ------
-    dict
-        Dictionary where the keys is the global onsite operator,
-        the values is its coefficient
-
-    Example
-    -------
-    We report here an example of the vertex numbering
-
-    .. code-block::
-
-        (0,2)--(1,2)--(2,2)
-          |      |      |
-        (0,1)--(1,1)--(2,1)
-          |      |      |
-        (0,0)--(1,0)--(2,0)
-    """
-    # Retrieve the interested register
-    site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]})' ]
-    num_qubs = qc.num_qubits
-
-    # Generate the global operators, padded with identities
-    global_operator = ['I']*num_qubs
-    # The local operator always has ZZ on the matter and
-    # identities elsewhere
-    operators =  'ZZ'
-    matter_sites = ['u', 'd']
-    for ii, matter in enumerate(matter_sites):
-        qubit = site_reg[matter]
-        # Retrieve qubit index
-        qidx = qc.find_bit(qubit).index
-        global_operator[qidx] = operators[ii]
-
-    # Pass from list of characters to string, inverting the ordering
-    # to satisfy qiskit convention
-    global_operator = ''.join(global_operator[::-1])
-    return {global_operator: 0.25*potential}
+            'adiabatic_operation', 'superposition_adiabatic_operation',
+            'add_particles']
 
 def evolution_operation(qc, regs, shape,
     interaction_constant, onsite_constant, dt, num_trotter_steps):
@@ -358,8 +218,9 @@ def adiabatic_operation(qc, regs, shape,
             sign = -1
         else:
             sign = 1
-        onsite_term = generate_starting_onsite(qc, regs, site, sign*chemical_potential*(1-alpha) )
-        total_hamiltonian.update(onsite_term)
+        for mm in ("u", "d"):
+            onsite_term = generate_chemical_potential(qc, regs, site, mm, sign*chemical_potential*(1-alpha) )
+            total_hamiltonian.update(onsite_term)
 
     # From dictionary to qiskit pauli_dict
     pauli_dict = from_operators_to_pauli_dict(total_hamiltonian)
@@ -371,67 +232,6 @@ def adiabatic_operation(qc, regs, shape,
         expansion_order=2, num_time_slices=num_trotter_steps)#,expansion_mode='suzuki')
 
     return adiabatic_instruction
-
-def generate_starting_onsite(qc, regs, site_idx, potential=1):
-    """
-    Generate the onsite operators of the hamiltonian given the
-    jordan-wigner transformation. Thus, the output are Pauli strings.
-    The operator is global in the sense that is padded with identities.
-
-    Parameters
-    ----------
-    qc : :py:class:`QuantumCircuit`
-        Quantum circuit class containing the Hubbard circuit
-    regs : dict
-        Dictionary of the SiteRegisters
-    link_idx : tuple
-        Unique identifier of the link where the hopping will take place
-    species : str
-        Matter species involved in the hopping
-    potential : 1
-        Value of the coefficient of the potential
-
-    Return
-    ------
-    dict
-        Dictionary where the keys is the global onsite operator,
-        the values is its coefficient
-
-    Example
-    -------
-    We report here an example of the vertex numbering
-
-    .. code-block::
-
-        (0,2)--(1,2)--(2,2)
-          |      |      |
-        (0,1)--(1,1)--(2,1)
-          |      |      |
-        (0,0)--(1,0)--(2,0)
-    """
-    # Retrieve the interested register
-    site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]})' ]
-    num_qubs = qc.num_qubits
-
-    # The local operator always has Z on the matter and
-    # identities elsewhere
-    hamiltonian_term = {}
-    matter_sites = ['u', 'd']
-    for matter in matter_sites:
-        # Generate the global operators, padded with identities
-        global_operator = ['I']*num_qubs
-        qubit = site_reg[matter]
-        # Retrieve qubit index
-        qidx = qc.find_bit(qubit).index
-        global_operator[qidx] = 'Z'
-
-        # Pass from list of characters to string, inverting the ordering
-        # to satisfy qiskit convention
-        global_operator = ''.join(global_operator[::-1])
-
-        hamiltonian_term[global_operator] = 0.5*potential
-
-    return hamiltonian_term
 
 def superposition_adiabatic_operation(qc, regs, shape,
     interaction_constant, onsite_constant,
@@ -491,3 +291,67 @@ def superposition_adiabatic_operation(qc, regs, shape,
         expansion_order=2, num_time_slices=num_trotter_steps)#,expansion_mode='suzuki')
 
     return adiabatic_instruction
+
+def add_particles(qc, regs, site0, site1):
+    """
+    Add a couple of up and down particles in the
+    sites site0 and site1. The procedure is different
+    is both sites are the same. It is assumed that
+    site0 is even and you add an up in site0 and a down
+    in site1
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        Original quantum circuit
+    regs: HubbardRegister
+        Collections of quantum registers
+    site0: str
+        Identifier of the site where to add the up specie.
+        It must be even
+    site1: str
+        Identifier of the site where to add the down specie.
+        It must be odd
+
+    Return
+    ------
+    QuantumCircuit
+        Quantum circuit with the gates to create a particle
+    """
+    if not regs[site0].is_even:
+        raise ValueError("site0 must be even")
+    temp_qc = QuantumCircuit(*regs.qregisters)
+    xx = np.array([ [0, 1], [1, 0]])
+    yy = np.array([ [0, -1j], [1j, 0]])
+    zz = np.array([ [1, 0], [0, -1]])
+    if site0 == site1:
+        # Add particles in site (2, 0)
+        real_q_idx = [ qc.find_bit(regs[site0]["u"]).index,
+                        qc.find_bit(regs[site0]["d"]).index ]
+
+    else:
+        # Ordering in the QC is:
+        # 1u,1d,1w,1s,1e,1n,2d
+        # Real index of the qubits on the quantum circuit
+        real_q_idx = []
+        for kk in regs[site0].map:
+            real_q_idx += [ qc.find_bit(regs[site0][kk]).index ]
+        real_q_idx += [ qc.find_bit(regs[site1]["d"]).index ]
+
+    num_qubits = len(real_q_idx)
+    z_on_rishons = 1
+    for _ in range(num_qubits-2):
+        z_on_rishons = np.kron(z_on_rishons, zz)
+
+    xz_on_rishons = np.kron(z_on_rishons, xx)
+    yz_on_rishons = np.kron(z_on_rishons, yy)
+    first_term = np.kron(zz@xx, xz_on_rishons)
+    second_term = -1j*np.kron(zz@yy, xz_on_rishons)
+    third_term = -1j*np.kron(zz@xx, yz_on_rishons)
+    fourth_term = np.kron(zz@yy, yz_on_rishons)
+    matrix = (first_term+second_term+third_term+fourth_term)/2
+    temp_qc.append( UnitaryGate(matrix), real_q_idx )
+    transp_params = qk_transpilation_params(basis_gates=["u", "rx", "ry", "rz", "cz", "swap"])
+    temp_qc = _preprocess_qk(temp_qc, qk_params=transp_params)
+    
+    return temp_qc

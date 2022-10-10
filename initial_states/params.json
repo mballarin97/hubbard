@@ -27,14 +27,14 @@
     "onsite_constant": 1,
     "dt": 0.01,
     "num_timesteps_for_alpha": 100,
-    "num_timesteps_before_measurement": 10,
+    "num_timesteps_before_measurement": 1,
     "mps_simulation_time": 0.7573854923248291,
     "initial_max_bond_dim": 16,
     "num_nonzero_states": 32,
     "adiabatic_step_num_2qubit_gates": 35700,
     "adiabatic_circ_generation_time": 202.44207763671875,
     "adiabatic_step_num_2qubit_gates_1d": 53841,
-    "evolution_step_num_2qubit_gates": 35700,
-    "evolution_circ_generation_time": 211.25871324539185,
-    "evolution_step_num_2qubit_gates_1d": 53841
+    "evolution_step_num_2qubit_gates": 3570,
+    "evolution_circ_generation_time": 30.714416980743408,
+    "evolution_step_num_2qubit_gates_1d": 5069
 }

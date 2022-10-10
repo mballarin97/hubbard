@@ -16,3 +16,5 @@ from .circuit import *
 from .evolution import *
 from .stabilizers import *
 from .utils import *
+from .hamiltonian_terms import *
+from .exact import *

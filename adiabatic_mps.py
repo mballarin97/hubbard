@@ -10,11 +10,16 @@
 
 from copy import deepcopy
 import pickle
-import numpy as np
 from tqdm import tqdm
 import os
 import json
+import time
+os.environ["MKL_NUM_THREADS"] = "8" 
+os.environ["NUMEXPR_NUM_THREADS"] = "8" 
+os.environ["OMP_NUM_THREADS"] = "8" 
 
+import numpy as np
+import cupy as cp
 from qiskit import AncillaRegister, ClassicalRegister
 from qmatchatea import run_simulation
 import qmatchatea as qtea
@@ -40,7 +45,7 @@ if __name__ == '__main__':
     # Onsite constant, usually called U
     onsite_constant = params["onsite_constant"]
     # Number of steps in the evolution
-    alpha_steps = 200
+    alpha_steps = 500
     # Maximum bond dimension of the simulation
     max_bond_dim = 1000
     # Number of evolution timesteps after the adiabatic process was over
@@ -97,11 +102,12 @@ if __name__ == '__main__':
     z_on_qubits = np.zeros((alpha_steps+final_time, qc.num_qubits) )
     ud_exps = np.zeros((alpha_steps+final_time, len(regs)) )
     entanglement = np.zeros((alpha_steps+final_time, qc.num_qubits-1))
+    timing = np.zeros(alpha_steps+final_time )
     # Initialize pauli matrices operators
     qc_ops = qtea.QCOperators()
-    qc_ops.ops['z'] = np.array([[1, 0], [0, -1]])
-    qc_ops.ops['y'] = np.array([[0, -1j], [1j, 0]])
-    qc_ops.ops['x'] = np.array([[0, 1], [1, 0]])
+    qc_ops.ops['z'] = cp.array([[1, 0], [0, -1]])
+    qc_ops.ops['y'] = cp.array([[0, -1j], [1j, 0]])
+    qc_ops.ops['x'] = cp.array([[0, 1], [1, 0]])
     # Initialize observables
     qc_obs = TNObservables()
     # Local observables, Z on each qubit
@@ -129,7 +135,8 @@ if __name__ == '__main__':
     # ================= Main loop, over the alphas =================
     idx = 0
     singvals = []
-    for alpha in tqdm(alphas):
+    start = time.time()
+    for alpha in alphas:
         # ===== Inner loop, for each alpha evolve for 10 timesteps =====
         if idx == 0:
             approach = 'PY'
@@ -158,7 +165,8 @@ if __name__ == '__main__':
         if compute_correlators:
             for ii, name in enumerate(corr_names):
                 correlators[idx, ii] = np.real(res.observables[name])
-        singvals = np.hstack((singvals, res.singular_values_cut))
+        singvals = np.hstack((singvals, np.sum(res.singular_values_cut) ))
+        timing[idx] = time.time()-start
 
         idx += 1
         np.savetxt(os.path.join(dir_name, 'z_on_qubits.txt'), z_on_qubits[:idx, :],
@@ -170,7 +178,7 @@ if __name__ == '__main__':
             np.savetxt(os.path.join(dir_name, 'correlators.txt'), correlators[:idx, :],
                         header=' '.join(corr_names))
         np.savetxt( os.path.join(dir_name, 'singvals.txt'), singvals)
+        np.savetxt( os.path.join(dir_name, 'time.txt'), timing)
 
     # Save final state
     initial_state.write(os.path.join(dir_name, 'mps_state.txt'))
-
