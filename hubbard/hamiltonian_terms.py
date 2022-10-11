@@ -28,8 +28,8 @@ def hopping_hamiltonian(qc, regs, shape,
         dictionary of pauli strings with their weight
     """
     # Links available in lattice of given shape
-    vert_links = [f'lv{ii}' for ii in range(shape[1]*(shape[0]-1))]
-    horiz_links = [f'lh{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    vert_links = [f'lv{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    horiz_links = [f'lh{ii}' for ii in range(shape[1]*(shape[0]-1))]
     avail_links = vert_links + horiz_links
 
     hamiltonian = {}
