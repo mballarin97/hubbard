@@ -82,7 +82,7 @@ for state in all_states:
 total_hamiltonian = {}
 onsite_hamiltonian = hbb.onsite_hamiltonian(qc, regs, shape, onsite_const)
 hopping_hamiltonian = hbb.hopping_hamiltonian(qc, regs, shape, hopping_const)
-#total_hamiltonian.update(onsite_hamiltonian)
+total_hamiltonian.update(onsite_hamiltonian)
 total_hamiltonian.update(hopping_hamiltonian)
 
 # Fill the hamiltonian entries
@@ -117,7 +117,8 @@ for idx, statei in tqdm(enumerate(mps_states)):
         #    print("NOOO CONNECTION")
 
 symmetric_hamiltonian = sp.csr_matrix(symmetric_hamiltonian)
-eigenvalues, eigenvectors = sp.linalg.eigsh(symmetric_hamiltonian, k=all_states.shape[0]-5 )
+#eigenvalues, eigenvectors = sp.linalg.eigsh(symmetric_hamiltonian, k=all_states.shape[0]-5 )
+eigenvalues, eigenvectors = np.linalg.eigh(symmetric_hamiltonian.todense() )
 #print(np.isclose( symmetric_hamiltonian-np.conj(symmetric_hamiltonian).T, np.zeros_like(symmetric_hamiltonian)).all() )
 #print(symmetric_hamiltonian)
 ordering = np.argsort(eigenvalues)
