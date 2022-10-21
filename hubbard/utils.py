@@ -76,8 +76,9 @@ def lattice_str(qc, state, regs, shape):
     if isinstance(state, dict):
         binaries = np.array( list(state.keys() ))
         state = np.array( list(state.values() ))
-        if state.shape[1] == 2:
-            state = state[:, 1]- state[:, 0]
+        if len(state.shape)>1:
+            if state.shape[1] == 2:
+                state = state[:, 1]- state[:, 0]
     else:
         NN = int(np.log2(len(state)))
         binaries = [bin(ii)[2:] for ii in range(2**NN)]

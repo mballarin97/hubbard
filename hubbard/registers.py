@@ -123,6 +123,7 @@ class SiteRegister():
         name = f'q({xpos}, {ypos})'
 
         return name, str_list
+
 class HubbardRegister():
     """
     Class to handle all the SiteRegisters of a Hubbard circuit, thus named

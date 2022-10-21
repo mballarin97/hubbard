@@ -76,15 +76,26 @@ def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correc
     # Apply cx and cy
     for corner in corner_order:
         for rishon in relative_rishons[corner]:
-            if corner == 'br':
-                qc.cx( ancilla, regs[involved_regs[corner]][rishon] )
-            elif corner == 'ul':
-                qc.cy( ancilla, regs[involved_regs[corner]][rishon] )
+            if regs[involved_regs["bl"]].is_even:
+                if corner == 'br':
+                    qc.cx( ancilla, regs[involved_regs[corner]][rishon] )
+                elif corner == 'ul':
+                    qc.cy( ancilla, regs[involved_regs[corner]][rishon] )
+            else:
+                if corner == 'br':
+                    qc.cy( ancilla, regs[involved_regs[corner]][rishon] )
+                elif corner == 'ul':
+                    qc.cx( ancilla, regs[involved_regs[corner]][rishon] )
 
     # Apply cz if qubits are available
-    for rishon in ('n', 'w'):
-        if rishon in regs[involved_regs['ul']]._keys:
-            qc.cz( ancilla, regs[involved_regs['ul']][rishon] )
+    if regs[involved_regs["bl"]].is_even:
+        for rishon in ('n', 'w'):
+            if rishon in regs[involved_regs['ul']]._keys:
+                qc.cz( ancilla, regs[involved_regs['ul']][rishon] )
+    else:
+        for rishon in ('s', 'e'):
+            if rishon in regs[involved_regs['br']]._keys:
+                qc.cz( ancilla, regs[involved_regs['br']][rishon] )
 
     # Measure ancilla on x, i.e. hadamard+measure on z
     qc.h(ancilla)

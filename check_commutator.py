@@ -16,7 +16,7 @@ if __name__ == '__main__':
     cancilla1 = ClassicalRegister(1, 'ca1')
 
     # Initialize Hubbard state
-    shape = (2, 2)
+    shape = (4, 2)
     regs, qc = hbb.hubbard_circuit(shape, qancilla, [cancilla, cancilla1] )
     print(qc.qregs)
     qc = hbb.initialize_chessboard(qc, regs)
@@ -24,8 +24,8 @@ if __name__ == '__main__':
     qc.barrier()
     global_hops = []
     # Links available in lattice of given shape
-    vert_links = [f'lv{ii}' for ii in range(shape[1]*(shape[0]-1))]
-    horiz_links = [f'lh{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    vert_links = [f'lv{ii}' for ii in range(shape[0]*(shape[1]-1))]
+    horiz_links = [f'lh{ii}' for ii in range(shape[1]*(shape[0]-1))]
     avail_links = vert_links + horiz_links
 
     hubbard_hamiltonian = {}

@@ -69,7 +69,11 @@ def generate_hopping(regs, link_idx, species):
 
     # Check which type of hopping it is
     # Hopping on x axis
+    coeff = 1
     if is_horizontal:
+        if from_site_reg.is_even:
+            coeff = -1
+
         # Hopping to the right
         if from_site_reg.pos[0] < to_site_reg.pos[0]:
             from_rishon = 'e'
@@ -99,6 +103,10 @@ def generate_hopping(regs, link_idx, species):
     to_site_list[to_site_reg.map[species]+1:to_site_reg.map[to_rishon]] = 'Z'
     to_site_list[to_site_reg.map[to_rishon]] = 'X'
 
+    #not_specie = "d" if species == "u" else "u"
+    #from_site_list[ from_site_reg.map[not_specie] ] = 'I'
+    #to_site_list[ to_site_reg.map[not_specie] ] = 'I'
+
     # Obtain the tensor product between the two hilber spaces by appending the operators
     operator =  np.hstack( (from_site_list, ['⊗'], to_site_list) )
 
@@ -107,7 +115,7 @@ def generate_hopping(regs, link_idx, species):
     herm_conj[from_site_reg.map[species]] = 'Y'
     herm_conj[len(from_site_list) + to_site_reg.map[species]+1] = 'X'
 
-    operator = { ''.join(operator) : 0.5, ''.join(herm_conj) : -0.5 }
+    operator = { ''.join(operator) : 0.5*coeff, ''.join(herm_conj) : -0.5*coeff }
 
     return operator, (from_site_reg, to_site_reg)
 
