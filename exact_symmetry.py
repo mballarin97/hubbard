@@ -11,14 +11,14 @@ from tqdm import tqdm
 from hubbard.hamiltonian_terms import hopping_hamiltonian
 import os
 
-shape = (4, 2)
+shape = (2, 2)
 # Interaction onsite constant
 onsite_const = 1
 # Hopping constant
 hopping_const = 0.1
 
-num_up = 1#np.prod(shape)//4
-num_down = 1#np.prod(shape)//4
+num_up = np.prod(shape)//2
+num_down = np.prod(shape)//2
 max_bond_dim = 100
 conv_params = qtea.QCConvergenceParameters(max_bond_dimension=max_bond_dim, singval_mode='C')
 all_states = hbb.all_possible_matter_states(shape, num_up, num_down)
@@ -67,7 +67,7 @@ all_states_strings = []
 aaa = 0
 for state in all_states:
     temp_qc = QuantumCircuit(*qc.qregs, *qc.cregs)
-    temp_state = QcMps(num_qubs, conv_params)
+    temp_state = QcMps(num_qubs, 1, conv_params)
     for idx, qub_state in enumerate(state):
         if qub_state == 1:
             site = sites[ idx//2 ]
@@ -116,10 +116,10 @@ if mps:
                 symmetric_hamiltonian[idx, jdx] += coeff*overlap
                 if idx == 25 and jdx == 16:
                     str1 = hbb.lattice_str(qc, new_state.meas_even_probabilities(0.01, qiskit_convention=True), regs, shape)
-                    str2 = hbb.lattice_str(qc, mps_states[jdx].meas_even_probabilities(0.01, qiskit_convention=True), regs, shape) 
+                    str2 = hbb.lattice_str(qc, mps_states[jdx].meas_even_probabilities(0.01, qiskit_convention=True), regs, shape)
                     print(str1 == str2 )
                     #fh.write(  hbb.lattice_str(qc, new_state.to_statevector(max_qubit_equivalent=30), regs, shape) )
-                    #fh.write(  hbb.lattice_str(qc, mps_states[jdx].to_statevector(max_qubit_equivalent=30), regs, shape)) 
+                    #fh.write(  hbb.lattice_str(qc, mps_states[jdx].to_statevector(max_qubit_equivalent=30), regs, shape))
                     mps_states[jdx].right_canonize(0)
                     new_state.right_canonize(0)
                     print(f"State {idx} is connected with {jdx} through {paulis} with overlap {overlap}\n")
