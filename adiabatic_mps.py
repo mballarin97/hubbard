@@ -14,9 +14,9 @@ from tqdm import tqdm
 import os
 import json
 import time
-os.environ["MKL_NUM_THREADS"] = "8" 
-os.environ["NUMEXPR_NUM_THREADS"] = "8" 
-os.environ["OMP_NUM_THREADS"] = "8" 
+os.environ["MKL_NUM_THREADS"] = "8"
+os.environ["NUMEXPR_NUM_THREADS"] = "8"
+os.environ["OMP_NUM_THREADS"] = "8"
 
 import numpy as np
 import cupy as cp
