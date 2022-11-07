@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     # =================== Initialize circuit ===================
     regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas, ordering=ordering )
-    qc = hbb.initialize_repulsive_rows(qc, regs, qancilla, cancillas[-1], shape)
+    qc = hbb.initialize_repulsive_rows(qc, regs, qancilla, cancillas[-1], shape, filling="h")
 
     for ii, pp in enumerate(plaquettes):
         qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
@@ -77,7 +77,6 @@ if __name__ == '__main__':
     with open(os.path.join(dir, "initial_repulsive_str.txt"), 'w' ) as fh:
         state_str = hbb.lattice_str(qc, statevect, regs, shape)
         fh.write(state_str)
-
 
     # =================== Generate adiabatic evolution circuit ===================
     start = time.time()

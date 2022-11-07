@@ -137,7 +137,7 @@ def initialize_superposition_chessboard(qc, regs, ancilla, cl_reg, correct=True,
 
     return qc
 
-def initialize_repulsive_rows(qc, regs, ancilla, cl_reg, shape):
+def initialize_repulsive_rows(qc, regs, ancilla, cl_reg, shape, filling="h"):
     """
     Initialize the hubbard state with two particles in each
     row, while respecting the stabilizers constraints
@@ -189,12 +189,27 @@ def initialize_repulsive_rows(qc, regs, ancilla, cl_reg, shape):
         if ii%2==0:
             qc.x(regs[f'q({ii}, {shape[1]-1})']['e'] )
 
-    # flip the bits to have only one particle per site
-    for ii in range(shape[0]):
-        if (ii+shape[1]-1)%2 == 1:
-            qc.x(regs[f'q({ii}, {shape[1]-1})']['u'] )
-        else:
-            qc.x(regs[f'q({ii}, {shape[1]-1})']['d'] )
+    # Add particles to reach half filling
+    if filling == "h":
+        for jj in range(shape[1]-1, 0, -1):
+            for ii in range(shape[0]):
+                for mm in ('u', 'd'):
+                    qc.cx(regs[f'q({ii}, {jj})'][mm],
+                            regs[f'q({ii}, {jj-1})'][mm])
+
+        for jj in range(shape[1]-1, -1, -1):
+            for ii in range(shape[0]):
+                if (ii+jj)%2 == 1:
+                    qc.x(regs[f'q({ii}, {jj})']['u'] )
+                else:
+                    qc.x(regs[f'q({ii}, {jj})']['d'] )
+    else:
+        # flip the bits to have only one particle per site
+        for ii in range(shape[0]):
+            if (ii+shape[1]-1)%2 == 1:
+                qc.x(regs[f'q({ii}, {shape[1]-1})']['u'] )
+            else:
+                qc.x(regs[f'q({ii}, {shape[1]-1})']['d'] )
     qc.barrier()
 
     # Complete with the other rows
