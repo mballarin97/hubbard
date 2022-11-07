@@ -65,7 +65,7 @@ if __name__ == '__main__':
     obsv += obs.TNState2File("state", "F")
     conv_params = QCConvergenceParameters(500)
     start = time.time()
-    res = run_simulation(qc, convergence_parameters= conv_params, approach='PY', observables=obsv)
+    res = run_simulation(qc, convergence_parameters= conv_params, observables=obsv)
     params['mps_simulation_time'] = time.time()-start
     statevect = res.measure_probabilities[0]
     max_bond_dim = np.array([ tens.shape for tens in res.mps]).flatten().max()

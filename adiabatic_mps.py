@@ -66,6 +66,7 @@ if __name__ == '__main__':
     params.pop("evolution_circ_generation_time")
     params.pop("evolution_step_num_2qubit_gates")
     conv_params = qtea.QCConvergenceParameters(max_bond_dimension=max_bond_dim, singval_mode='C')
+    backend = qtea.QCBackend(backend="PY", device="gpu")   
 
     # Vertexes definition
     vertexes = [(ii, jj) for ii in range(shape[0]) for jj in range(shape[1])]
@@ -151,7 +152,7 @@ if __name__ == '__main__':
                             io_info=qcio,
                             observables=qc_obs,
                             operators=qc_ops,
-                            approach=approach,
+                            backend = backend,
                             transpilation_parameters=qk_transpilation_params(False)
                             )
         initial_state = MPS.from_tensor_list(res.mps, conv_params)
