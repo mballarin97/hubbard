@@ -14,9 +14,9 @@ from tqdm import tqdm
 import os
 import json
 import time
-os.environ["MKL_NUM_THREADS"] = "8" 
-os.environ["NUMEXPR_NUM_THREADS"] = "8" 
-os.environ["OMP_NUM_THREADS"] = "8" 
+os.environ["MKL_NUM_THREADS"] = "8"
+os.environ["NUMEXPR_NUM_THREADS"] = "8"
+os.environ["OMP_NUM_THREADS"] = "8"
 
 import numpy as np
 import cupy as cp
@@ -57,6 +57,7 @@ if __name__ == '__main__':
     # If True, compute correlators
     compute_correlators = True
     state_idx = 0
+    excitation = None
 
     # Parameters dictionary for saving
     params['chi'] = max_bond_dim
@@ -65,6 +66,7 @@ if __name__ == '__main__':
     params.pop("adiabatic_circ_generation_time")
     params.pop("adiabatic_step_num_2qubit_gates")
     conv_params = qtea.QCConvergenceParameters(max_bond_dimension=max_bond_dim, singval_mode='C')
+    backend = qtea.QCBackend(backend="PY", device="gpu")
 
     # Vertexes definition
     vertexes = [(ii, jj) for ii in range(shape[0]) for jj in range(shape[1])]
@@ -92,9 +94,16 @@ if __name__ == '__main__':
         evolution_circ = pickle.load(fh)
 
     # ============= Initialize Hubbard circuit =============
-    regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas, params["ordering"] )
+    extra_leg = True if excitation == "charge" else False
+    regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas, params["ordering"], extra_leg )
 
     tensor_list = qtea.read_mps(f"data/{state_idx}/mps_state.txt")
+
+    if excitation == "charge":
+        tensor_list = hbb.create_charge_excitation(qc, regs, tensor_list)
+    elif excitation == "spin":
+        tensor_list = hbb.create_spin_excitation(qc, regs, tensor_list)
+
     initial_state = MPS.from_tensor_list(tensor_list, conv_params)
     qregs_names = [qreg.name for qreg in qc.qregs]
 
@@ -136,16 +145,8 @@ if __name__ == '__main__':
     start = time.time()
     for timestep in range(num_timesteps):
         # ===== Inner loop, for each alpha evolve for 10 timesteps =====
-        if idx == 0:
-            approach = 'PY'
-        elif idx == 1:
-            # Add particles in site (2, 0)
-            site0 = "q(0, 0)"
-            site1 = "q(0, 1)"
-            qc = hbb.add_particles(qc, regs, site0, site1)
-        else:
+        if idx > 0:
             qc = deepcopy(evolution_circ)
-            approach = 'PY'
 
         # Simulate the circuit
         qcio = qtea.QCIO(inPATH='temp/in/', outPATH='temp/out/', initial_state=initial_state)
@@ -153,8 +154,8 @@ if __name__ == '__main__':
                             convergence_parameters=conv_params,
                             io_info=qcio,
                             observables=qc_obs,
+                            backend = backend,
                             operators=qc_ops,
-                            approach=approach,
                             transpilation_parameters=qk_transpilation_params(False, tensor_compiler=False)
                             )
         initial_state = MPS.from_tensor_list(res.mps, conv_params)

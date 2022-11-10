@@ -31,9 +31,9 @@ class SiteRegister():
         Shape of the lattice. For a 2x2 lattice it is (2, 2)
     """
 
-    def __init__(self, xpos, ypos, shape, link_regs):
+    def __init__(self, xpos, ypos, shape, link_regs, extra_leg=False):
 
-        name, str_list = self._init_site_register(xpos, ypos, shape)
+        name, str_list = self._init_site_register(xpos, ypos, shape, extra_leg)
         self.name = name
         self.is_even = (xpos+ypos)%2 == 0
         self._keys = str_list
@@ -82,7 +82,7 @@ class SiteRegister():
         return self._qregister
 
     @staticmethod
-    def _init_site_register(xpos, ypos, shape):
+    def _init_site_register(xpos, ypos, shape, extra_leg=False):
         """
         Initialize a quantum register defined by the site
         in the positions xpos, ypos of a lattice
@@ -115,7 +115,7 @@ class SiteRegister():
             str_list.remove('w')
         if xpos == shape[0]-1:
             str_list.remove('e')
-        if ypos == 0:
+        if ypos == 0 and (not extra_leg):
             str_list.remove('s')
         if ypos == shape[1]-1:
             str_list.remove('n')
@@ -144,7 +144,7 @@ class HubbardRegister():
         - All the sites, left to right, down to up
     """
 
-    def __init__(self, shape, ordering=None):
+    def __init__(self, shape, ordering=None, extra_leg=False):
 
         vert_links = [ii for ii in range(shape[0]*(shape[1]-1))]
         horiz_links = [ii for ii in range(shape[1]*(shape[0]-1))]
@@ -174,7 +174,11 @@ class HubbardRegister():
                 if ypos != shape[1]-1:
                     link_regs['n'] = links_qr[f'lv{ypos+xpos*(shape[1]-1)}']
 
-                site = SiteRegister(xpos, ypos, shape, link_regs)
+                if ypos == xpos == 0:
+                    extra_leg_temp = extra_leg
+                else:
+                    extra_leg_temp = False
+                site = SiteRegister(xpos, ypos, shape, link_regs, extra_leg_temp)
 
                 self.registers[f'q({xpos}, {ypos})'] = site
                 self.qregisters += [site.qregister]

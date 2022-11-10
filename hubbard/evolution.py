@@ -24,7 +24,7 @@ from .circuit import hubbard_circuit
 
 __all__ = ['evolution_operation', 'insert_noise', 'generate_evolution_circuit',
             'adiabatic_operation', 'superposition_adiabatic_operation',
-            'add_particles']
+            'add_particles', 'create_charge_excitation', 'create_spin_excitation']
 
 def evolution_operation(qc, regs, shape,
     interaction_constant, onsite_constant, dt, num_trotter_steps):

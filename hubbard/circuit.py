@@ -14,7 +14,7 @@ from .registers import HubbardRegister
 __all__ = ['hubbard_circuit', 'initialize_chessboard', 'initialize_superposition_chessboard',
             'initialize_repulsive_rows']
 
-def hubbard_circuit(shape, ancilla_register, classical_registers, ordering=None):
+def hubbard_circuit(shape, ancilla_register, classical_registers, ordering=None, extra_leg=False):
     """
     Initialize a quantum circuit with the Hubbard
     shape
@@ -43,7 +43,7 @@ def hubbard_circuit(shape, ancilla_register, classical_registers, ordering=None)
         The quantum circuit
     """
 
-    registers = HubbardRegister(shape, ordering)
+    registers = HubbardRegister(shape, ordering, extra_leg)
 
     qc = QuantumCircuit(*registers.qregisters, ancilla_register, *classical_registers,
         name=f'Hubbard {shape}')
