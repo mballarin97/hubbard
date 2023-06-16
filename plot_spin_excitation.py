@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from qplotting import Qplotter
 from qplotting.utils import set_size_pt
 import numpy as np
+from matplotlib.colors import TwoSlopeNorm
+
 
 import hubbard as hbb
 
@@ -15,8 +17,10 @@ results_2 = hbb.postprocess_data(21)
 svd = np.concatenate( (results_1["singvals"], results_2["singvals"]) )
 print(f"The fidelity is {np.prod(1-svd)}")
 
-spin = np.vstack( (results_1["spin"], results_2["spin"]) )
+spin = np.vstack( (results_1["double_occupancy"] - results_1["charge"], results_2["double_occupancy"] - results_1["charge"]) )
 charge = np.vstack( (results_1["charge"], results_2["charge"]) )
+spin = spin[:len(spin)//2]
+charge = charge[:len(charge)//2]
 
 timestep_bm = results_1["params"]["num_timesteps_before_measurement"]
 dt = results_1["params"]["dt"]
@@ -27,30 +31,53 @@ times = times[:len(spin)]
 ###########################################################################
 ########################### SPIN-CHARGE VALUE #############################
 ###########################################################################
+distance_charge = np.vstack( (
+    charge[:, 0],
+    charge[:, 1], #np.mean( np.hstack( (charge[:, 1].reshape(-1, 1), charge[:, 4].reshape(-1, 1)) ), axis=1),
+    #charge[:, 5],
+    charge[:, 2],
+    #charge[:, 6],
+    charge[:, 3],
+    #charge[:, 7],
+    ))
 distance_spin = np.vstack( (
     spin[:, 0],
-    np.mean( np.hstack( (spin[:, 1].reshape(-1, 1), spin[:, 4].reshape(-1, 1)) ), axis=1),
-    spin[:, 5],
+    spin[:, 1], #np.mean( np.hstack( (spin[:, 1].reshape(-1, 1), spin[:, 4].reshape(-1, 1)) ), axis=1),
+    #spin[:, 5],
     spin[:, 2],
-    spin[:, 6],
+    #spin[:, 6],
     spin[:, 3],
-    spin[:, 7],
+    #spin[:, 7],
     ))
 
-figname = os.path.join(save_path, ("spin_excitation.pdf") )
-with Qplotter() as qplt:
-    #fig, ax = plt.subplots(figsize=(12, 6))
-    im = qplt.imshow(distance_spin, cmap="jet",
-        aspect='auto', interpolation='none')
-    cbar = qplt.colorbar(im )
-    cbar.ax.set_ylabel('Spin $S^z_i(t)-S^z_i(0)$', rotation=270, labelpad=15)
+figname = os.path.join(save_path, ("spin_excitation_y=0.pdf") )
+qplotter = Qplotter()
+qplotter(nrows=2, ncols=1, figsize=set_size_pt(234, subplots=(2, 1)), sharex=True)
+with qplotter as qplt:
+    im0 = qplt.ax[0].imshow(distance_charge - distance_charge[:, 0].reshape(-1, 1), aspect='auto',
+        interpolation='none', cmap="seismic", norm=TwoSlopeNorm(0))
+    cbar = plt.colorbar(im0, ax=qplt.ax[0])
+    cbar.ax.set_ylabel('Charge $N_i(t)-N_i(0)$', rotation=270, labelpad=15)
 
-    qplt.set_yticks( [ii for ii in range(7)])
-    qplt.set_yticklabels( [0, 1, "$\sqrt{2}$", 2, "$\sqrt{5}$", 3, "$\sqrt{17}$"] )
-    qplt.set_xticks( np.linspace(0, len(times)-1, 6, dtype=int) )
-    qplt.set_xticklabels( times[np.linspace(0, len(times)-1, 6, dtype=int) ].astype(int) )
-    qplt.set_xlabel("Time $t/U$")
-    qplt.set_ylabel("Distance from site (0,0)")
+    qplt.ax[0].tick_params(axis='y', which='minor', left=False, right=False)
+    qplt.ax[0].set_yticks( [ii for ii in range(4)])
+    #qplt.ax[0].set_yticklabels( [0, 1, "$\sqrt{2}$", 2, "$\sqrt{5}$", 3, "$\sqrt{17}$"] )
+    qplt.ax[0].set_yticklabels( [0, 1, 2, 3] )
+    qplt.ax[0].set_ylabel("Distance from site (0,0)")
+
+    im1 = qplt.ax[1].imshow(distance_spin - distance_spin[:, 0].reshape(-1, 1), aspect='auto',
+        interpolation='none', cmap="seismic", norm=TwoSlopeNorm(0))
+    cbar = plt.colorbar(im1, ax=qplt.ax[1])
+    cbar.ax.set_ylabel('Spin $S^2_i(t)-S^2_i(0)$', rotation=270, labelpad=15)
+
+    qplt.ax[1].tick_params(axis='y', which='minor', left=False, right=False)
+    qplt.ax[1].set_yticks( [ii for ii in range(4)])
+    #qplt.ax[1].set_yticklabels( [0, 1, "$\sqrt{2}$", 2, "$\sqrt{5}$", 3, "$\sqrt{17}$"] )
+    qplt.ax[1].set_yticklabels( [0, 1, 2, 3] )
+    qplt.ax[1].set_xticks( np.linspace(0, len(times)-1, 6, dtype=int) )
+    qplt.ax[1].set_xticklabels( times[np.linspace(0, len(times)-1, 6, dtype=int) ].astype(int) )
+    qplt.ax[1].set_xlabel("Time $t/U$")
+    qplt.ax[1].set_ylabel("Distance from site (0,0)")
 
     qplt.savefig(figname)
 
@@ -86,7 +113,7 @@ qplotter(nrows=2, ncols=1, figsize=set_size_pt(234, subplots=(2, 1)), sharex=Tru
 figname = os.path.join(save_path, ("spin_excitation_correlators.pdf") )
 with qplotter as qplt:
 
-    im0 = qplt.ax[0].imshow(matter_corr_distance, aspect='auto', interpolation='none', cmap="jet")
+    im0 = qplt.ax[0].imshow(matter_corr_distance, aspect='auto', interpolation='none', cmap="seismic")
     cbar = plt.colorbar(im0, ax=qplt.ax[0])
     cbar.ax.set_ylabel('Charge correlator\n$\\langle N_{(0,0)}(t)N_i(t)\\rangle$', rotation=270, labelpad=25)
 
@@ -96,7 +123,7 @@ with qplotter as qplt:
     qplt.ax[0].set_ylabel("Distance from site (0,0)")
 
     im1 = qplt.ax[1].imshow(spin_corr_distance, aspect='auto',
-        interpolation='none', cmap="jet")
+        interpolation='none', cmap="seismic")
     cbar = plt.colorbar(im0, ax=qplt.ax[1])
     cbar.ax.set_ylabel('Spin correlator\n$\\langle S^z_{(0,0)}(t)S^z_i(t)\\rangle$', rotation=270, labelpad=25)
 
