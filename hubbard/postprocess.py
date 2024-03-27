@@ -106,7 +106,7 @@ def postprocess_ud(params, z_on_qubits, ud):
     # - First, all the vertical rishons are described
     # - Second, all the horizontal rishons are described
     # - Third, all the sites are described. In this case the outer loop is over the y coordinate
-    extra_leg = False#True if params["excitation"] == "charge" else False
+    extra_leg = True if params["excitation"] == "charge" else False
     num_rishons = (params["shape"][0]-1)*params["shape"][1] + params["shape"][0]*(params["shape"][1]-1) + int(extra_leg)
     num_sites = params["shape"][0]*params["shape"][1]
 
