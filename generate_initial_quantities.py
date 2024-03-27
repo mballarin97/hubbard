@@ -1,3 +1,22 @@
+# This code is part of hubbard.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""
+Here we generate the following initial quantities, since they are very computationally
+demanding to compute and always the same:
+
+1. The initial state for the adiabatic ground state preparation
+2. The (parametric) adiabatic evolution operator as quantum circuit on a linear topology
+3. The (parametric) evolution operator as a quantum circuit on a linear topology
+"""
+
 import os
 import pickle
 import json
@@ -18,6 +37,7 @@ dt = 0.01
 num_timesteps_for_alpha = 10
 num_timesteps_before_measurement = 10
 extra_leg = False
+generate_adiabatic_operator = False
 
 # 4x4 ordering
 if shape == (4, 4):
@@ -94,7 +114,7 @@ if __name__ == '__main__':
 #        fh.write(state_str)
 
     # =================== Generate adiabatic evolution circuit ===================
-    if False:
+    if generate_adiabatic_operator:
         start = time.time()
         adiabatic_instruction = hbb.adiabatic_operation(qc, regs, shape, #superposition_adiabatic_operation
                     hopping_constant, onsite_constant, onsite_constant,

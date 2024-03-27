@@ -1,3 +1,17 @@
+# This code is part of hubbard.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""
+This code simply plots the lattice in a nice way, highlighting the 1d mapping
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -27,6 +41,6 @@ ax.plot(qubit_final_ordering[:, 0], qubit_final_ordering[:, 1], lw=5, color='for
 ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True, fontsize=14)
 plt.tight_layout()
-plt.savefig('1d_mapping.pdf')
+plt.savefig('images/1d_mapping.pdf')
 
 plt.show()

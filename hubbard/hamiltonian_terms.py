@@ -1,5 +1,4 @@
 
-from .qiskit_pauli import WeightedPauliOperator
 from .operators import generate_global_hopping, generate_global_onsite, generate_chemical_potential
 from qiskit.circuit import Parameter
 
@@ -36,13 +35,13 @@ def hopping_hamiltonian(qc, regs, shape,
     # Generate hopping term of Hubbard hamiltonian
     if isinstance(parameter, Parameter):
         interaction_constant = interaction_constant*parameter
-        
+
     for link_idx in avail_links:
         # Generate the hopping for both the matter species
         for specie in ('u', 'd'):
             hop_term = generate_global_hopping(qc, regs, link_idx, specie, interaction_constant)
             hamiltonian.update(hop_term)
-    
+
     return hamiltonian
 
 
@@ -81,7 +80,7 @@ def onsite_hamiltonian(qc, regs, shape,
     for site in sites:
         onsite_term = generate_global_onsite(qc, regs, site, onsite_constant)
         hamiltonian.update(onsite_term)
-    
+
     return hamiltonian
 
 def chemical_potentials_hamiltonian(qc, regs, shape,
@@ -125,5 +124,5 @@ def chemical_potentials_hamiltonian(qc, regs, shape,
                 chem_pot_value = chem_pot_value*parameter
             chemical_potential_term = generate_chemical_potential(qc, regs, site, mm, chem_pot_value)
             hamiltonian.update(chemical_potential_term)
-    
+
     return hamiltonian

@@ -1,3 +1,18 @@
+# This code is part of hubbard.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""
+Check that all the symmetries are enforced using either MPS or
+exact diagonalization
+"""
+
 from copy import deepcopy
 import hubbard as hbb
 import numpy as np
@@ -8,7 +23,6 @@ from qmatchatea.py_emulator import QcMps
 from qmatchatea.preprocessing import _preprocess_qk
 from tqdm import tqdm
 
-from hubbard.hamiltonian_terms import hopping_hamiltonian
 import os
 
 shape = (4, 2)
@@ -25,7 +39,6 @@ all_states = hbb.all_possible_matter_states(shape, num_up, num_down)
 print(f"There will be a total of {all_states.shape[0]} states")
 
 # Hamiltonian of the symmetry sector
-#symmetric_hamiltonian = np.zeros([all_states.shape[0]]*2, dtype=complex)
 symmetric_hamiltonian = sp.lil_matrix(tuple([all_states.shape[0]]*2), dtype=complex)
 
 # Vertexes definition
@@ -57,11 +70,6 @@ for ii, pp in enumerate(plaquettes):
     qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
 
 lin_qc = _preprocess_qk(qc)
-#print(lin_qc)
-#fh = open("try.txt", "w")
-# Generate all the correct MPS states that respect
-# all the stabilizer checks
-#all_states = all_states[[6, 12]]
 mps_states = []
 all_states_strings = []
 aaa = 0
@@ -79,10 +87,6 @@ for state in all_states:
     all_states_strings.append(
         list(temp_state.meas_projective(1).keys())[0][1:]
     )
-    #if aaa in (16, ):
-        #fh.write( hbb.lattice_str(qc, temp_state.meas_even_probabilities(0.01, qiskit_convention=True), regs, shape) )
-        #print( hbb.lattice_str(qc, temp_state.to_statevector(max_qubit_equivalent=30), regs, shape) )
-    #    fh.write("------\n")
     aaa += 1
 
 
@@ -107,40 +111,21 @@ if mps:
                 elif pauli == "Z":
                     temp_qc.z(pidx)
             _ = new_state.run_from_qk(temp_qc)
-            #print( hbb.lattice_str(qc, new_state.to_statevector(), regs, shape) )
-            #print("-----------------")
             jdx = hbb.new_state_index(all_states, shape, idx, paulis, site_ordering)
             if jdx is not None:
                 overlap = deepcopy(mps_states[jdx]).contract(new_state)
-                #overlap = deepcopy(mps_states[jdx]).contract(mps_states[jdx])
                 symmetric_hamiltonian[idx, jdx] += coeff*overlap
                 if idx == 25 and jdx == 16:
                     str1 = hbb.lattice_str(qc, new_state.meas_even_probabilities(0.01, qiskit_convention=True), regs, shape)
                     str2 = hbb.lattice_str(qc, mps_states[jdx].meas_even_probabilities(0.01, qiskit_convention=True), regs, shape)
                     print(str1 == str2 )
-                    #fh.write(  hbb.lattice_str(qc, new_state.to_statevector(max_qubit_equivalent=30), regs, shape) )
-                    #fh.write(  hbb.lattice_str(qc, mps_states[jdx].to_statevector(max_qubit_equivalent=30), regs, shape))
                     mps_states[jdx].right_canonize(0)
                     new_state.right_canonize(0)
                     print(f"State {idx} is connected with {jdx} through {paulis} with overlap {overlap}\n")
-                    #print(temp_qc)
-            ## DEAD CODE, WAS CHECKING EACH POSSIBLE OVERLAP
-            #happened = False
-            #for jdx, statej in enumerate(mps_states):
-            #    overlap = statej.contract(new_state)
-            #    if np.abs(overlap) > 1e-9:
-            #        print(f"State {idx} is connected with {jdx} through {paulis} with overlap {overlap}")
-            #        print('---------')
-            #        symmetric_hamiltonian[idx, jdx] += overlap*coeff
-            #        happened = True
-            #        break
-            #if not happened:
-            #    print("NOOO CONNECTION")
 else:
     # Fill the hamiltonian entries
     print(all_states_strings)
     for idx, statei in tqdm(enumerate(all_states_strings)):
-        #print(all_states_strings[idx])
         for paulis, coeff in total_hamiltonian.items():
             new_state = ""
             phase = 1
@@ -165,20 +150,16 @@ else:
                     print(jdx)
                     break
             if jdx is not None:
-                #print(f"State {idx} is connected with {jdx} through {paulis} with overlap {phase}")
                 symmetric_hamiltonian[idx, jdx] += coeff*phase
         exit()
-#fh.close()
+
 symmetric_hamiltonian = sp.csr_matrix(symmetric_hamiltonian)
-#eigenvalues, eigenvectors = sp.linalg.eigsh(symmetric_hamiltonian, k=all_states.shape[0]-5 )
 eigenvalues, eigenvectors = np.linalg.eigh(symmetric_hamiltonian.todense() )
-#print(np.isclose( symmetric_hamiltonian-np.conj(symmetric_hamiltonian).T, np.zeros_like(symmetric_hamiltonian)).all() )
-#print(symmetric_hamiltonian)
 ordering = np.argsort(eigenvalues)
 eigenvectors = eigenvectors[:, ordering]
 eigenvalues = eigenvalues[ ordering]
 
-#save_dir = f"data/exact/{shape[0]}x{shape[1]}"
+
 save_dir = f"{shape[0]}x{shape[1]}"
 if not os.path.isdir(save_dir):
     os.mkdir(save_dir)

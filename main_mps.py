@@ -8,9 +8,21 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+"""
+Run the evolution with MPS state following these steps:
+
+1. Load the adiabatic ground-state
+2. Insert the excitation (either "spin", "charge" or None)
+3. Run the evolution
+4. Measure the observables
+
+To ensure the measurement and checkpoint at each timestep,
+we save the state after a timestep and load it in the next one.
+"""
+
+
 from copy import deepcopy
 import pickle
-from tqdm import tqdm
 import os
 import json
 import time

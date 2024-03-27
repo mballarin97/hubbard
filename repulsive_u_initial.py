@@ -1,11 +1,21 @@
-from cProfile import run
+# This code is part of hubbard.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""
+Different intialization of the state before the adiabatic procedure
+"""
 import hubbard as hbb
 from qiskit import AncillaRegister, ClassicalRegister, execute
-from qiskit.providers.aer import StatevectorSimulator
-import numpy as np
-import matplotlib.pyplot as plt
+from qiskit_aer.backends import StatevectorSimulator
 from qmatchatea import run_simulation, QCConvergenceParameters
-import tn_py_frontend.observables as obs
+import qtealeaves.observables as obs
 
 def old_build_circuit(qc, regs, qancilla, cancillas):
     # First two states (Off diagonal)

@@ -8,6 +8,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+"""
+This code plots various quantities used in the initial analysis.
+None of these results are in the paper.
+"""
+
 import os
 import json
 import numpy as np

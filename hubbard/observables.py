@@ -9,7 +9,6 @@
 # that they have been altered from the originals.
 
 import numpy as np
-#from .qiskit_pauli import WeightedPauliOperator
 from qiskit.aqua.operators.legacy import WeightedPauliOperator
 from .evolution import generate_global_hopping
 from .operators import from_operators_to_pauli_dict

@@ -29,7 +29,7 @@ def is_updown_number_respected(state, num_up, num_down):
         Number of up specie in the system
     num_down: int
         Number of down specie in the system
-    
+
     Returns
     -------
     bool
@@ -47,7 +47,7 @@ def is_updown_number_respected(state, num_up, num_down):
         flag = False
     else:
         flag = True
-    
+
     return flag
 
 def all_possible_matter_states(shape, num_up, num_down):
@@ -67,7 +67,7 @@ def all_possible_matter_states(shape, num_up, num_down):
         Number of up species
     num_down : int
         Number of down species
-    
+
     Returns
     -------
     np.ndarray
@@ -114,7 +114,7 @@ def all_possible_matter_states_opt(shape, num_up, num_down):
         Number of up species
     num_down : int
         Number of down species
-    
+
     Returns
     -------
     np.ndarray
@@ -142,7 +142,7 @@ def all_possible_matter_states_opt(shape, num_up, num_down):
     else:
         for state in distinct_permutations(down_state):
             all_down_states.append(state)
-    
+
     all_states = []
     for up_state, down_state in product(all_up_states, all_down_states):
         all_states.append( np.stack((up_state, down_state), axis=1).ravel())
@@ -181,7 +181,7 @@ def new_state_index(all_states, shape, input_idx, paulis, site_ordering):
     paulis = np.array(list(paulis))
     paulis = paulis[1:-num_links][::-1]
     paulis = paulis[site_ordering]
-    
+
     input_state = all_states[input_idx]
     output_state = deepcopy(input_state)
     output_state[np.logical_or(paulis=="X", paulis=="Y") ] -= 1

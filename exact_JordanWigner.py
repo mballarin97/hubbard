@@ -1,17 +1,44 @@
+# This code is part of hubbard.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""
+Perform the exact diagonalization of a 2x2 plaquette
+using the Jordan Wigner mapping as a reference for our implementation
+"""
+
 from copy import deepcopy
 import hubbard as hbb
 import numpy as np
 import scipy.sparse as sp
-from qiskit import AncillaRegister, ClassicalRegister, QuantumCircuit
 import qmatchatea as qtea
-from qmatchatea.py_emulator import QcMps
-from qmatchatea.preprocessing import _preprocess_qk
 from tqdm import tqdm
-
-from hubbard.hamiltonian_terms import hopping_hamiltonian
 import os
 
 def wigner_onsite(shape, onsite):
+    """
+    Generate the JW string associated with all on-site
+    term on a system with a given shape
+
+    Parameters
+    ----------
+    shape : Tuple[int]
+        Size of the system
+    onsite : float
+        Strength of the onsite interaction
+
+    Return
+    ------
+    dict
+        The dictionary with key the pauli string,
+        value the interaction strenght
+    """
     hamiltonian = {}
     string = list("I"*2*np.prod(shape))
     for ii in range(0, 2*np.prod(shape), 2):
@@ -21,6 +48,23 @@ def wigner_onsite(shape, onsite):
     return hamiltonian
 
 def generate_hopping(shape, link_idx, species):
+    """
+    Generate a single JW hopping
+
+    Parameters
+    ----------
+    shape : Tuple[int]
+        Size of the system
+    link_idx : str
+        Identifier of the link
+    species : str
+        If up "u" or down "d" fermion.
+
+    Returns
+    -------
+    List[str]
+        Hopping term on that link with its adjoint
+    """
     # If the y component of the index is even
     # the link is horizontal, otherwise vertical
     is_horizontal = (link_idx[1] == 'h')
@@ -64,6 +108,23 @@ def generate_hopping(shape, link_idx, species):
     return finals
 
 def wigner_hopping(shape, hopping):
+    """
+    Generate the JW string associated with all hopping
+    terms on a system with a given shape
+
+    Parameters
+    ----------
+    shape : Tuple[int]
+        Size of the system
+    hopping : float
+        Strength of the hopping
+
+    Return
+    ------
+    dict
+        The dictionary with key the pauli string,
+        value the interaction strenght
+    """
     hamiltonian = {}
     # Links available in lattice of given shape
     vert_links = [f'lv{ii}' for ii in range(shape[0]*(shape[1]-1))]
@@ -93,7 +154,6 @@ all_states = hbb.all_possible_matter_states(shape, num_up, num_down)
 print(f"There will be a total of {all_states.shape[0]} states")
 
 # Hamiltonian of the symmetry sector
-#symmetric_hamiltonian = np.zeros([all_states.shape[0]]*2, dtype=complex)
 symmetric_hamiltonian = sp.lil_matrix(tuple([all_states.shape[0]]*2), dtype=complex)
 
 # Vertexes definition
@@ -102,17 +162,14 @@ sites = [f"q({ii}, {jj})" for jj in range(shape[1]) for ii in range(shape[0])]
 
 total_hamiltonian = {}
 onsite_hamiltonian = wigner_onsite(shape, onsite_const)
-hopping_hamiltonian = wigner_hopping(shape, hopping_const)
+hop_hamiltonian = wigner_hopping(shape, hopping_const)
 total_hamiltonian.update(onsite_hamiltonian)
-total_hamiltonian.update(hopping_hamiltonian)
-#for ii in total_hamiltonian:
-#    print(ii)
+total_hamiltonian.update(hop_hamiltonian)
 
 all_states_strings = np.array([ "".join(list(ss)) for ss in all_states.astype(str) ])
 
 # Fill the hamiltonian entries
 for idx, statei in tqdm(enumerate(all_states)):
-    #print(all_states_strings[idx])
     for paulis, coeff in total_hamiltonian.items():
         new_state = ""
         phase = 1
@@ -134,14 +191,10 @@ for idx, statei in tqdm(enumerate(all_states)):
                 jdx = ii
                 break
         if jdx is not None:
-            #print(f"State {idx} is connected with {jdx} through {paulis} with overlap {phase}")
             symmetric_hamiltonian[idx, jdx] += coeff*phase
 
 symmetric_hamiltonian = sp.csr_matrix(symmetric_hamiltonian)
-#eigenvalues, eigenvectors = sp.linalg.eigsh(symmetric_hamiltonian, k=all_states.shape[0]-5 )
 eigenvalues, eigenvectors = np.linalg.eigh(symmetric_hamiltonian.todense() )
-#print(np.isclose( symmetric_hamiltonian-np.conj(symmetric_hamiltonian).T, np.zeros_like(symmetric_hamiltonian)).all() )
-#print(symmetric_hamiltonian)
 ordering = np.argsort(eigenvalues)
 eigenvectors = eigenvectors[:, ordering]
 eigenvalues = eigenvalues[ ordering]

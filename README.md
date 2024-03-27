@@ -111,3 +111,10 @@ Please feel free to implement plotting of the other quantities in `hubbard/plott
 the examples already written, and then add the new lines in `plot.py`.
 
 > :warning: If the plaquette symmetry is not satisfied at *any* time-step the plotter script will raise a `RuntimeError`.
+
+### Tweaks
+
+The version of qiskit-aqua used for the library is not working by default.
+When installed with pip, you need to modify the file
+`/PATH/site-packages/qiskit/providers/__init__.py` and add the line
+`from qiskit.providers.backend import Backend as BaseBackend`.

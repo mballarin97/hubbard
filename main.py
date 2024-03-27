@@ -8,6 +8,10 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+"""
+Run the simulation with exact statevector for small systems
+"""
+
 import numpy as np
 from tqdm import tqdm
 import os
@@ -15,7 +19,7 @@ from shutil import rmtree
 
 from qiskit.extensions.quantum_initializer.initializer import initialize
 from qiskit import QuantumCircuit, AncillaRegister, ClassicalRegister, execute
-from qiskit.providers.aer import StatevectorSimulator
+from qiskit_aer.backends import StatevectorSimulator
 
 import hubbard as hbb
 import hubbard.observables as obs

@@ -1,8 +1,21 @@
+# This code is part of hubbard.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""
+Perform the exact diagonalization of a 2x2 plaquette in order to
+check that the spectrum of the hamiltonian is correct
+(This is going to be checked with the Jordan-Wigner mapping results)
+"""
+
 from hubbard.evolution import generate_global_onsite, generate_global_hopping, from_operators_to_pauli_dict, WeightedPauliOperator, generate_starting_onsite
 import numpy as np
-import qmatchatea
-from tn_py_frontend.emulator import MPS
-from hubbard.utils import lattice_str
 import hubbard as hbb
 from qiskit import AncillaRegister, ClassicalRegister
 import numpy as np
