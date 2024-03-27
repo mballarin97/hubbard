@@ -16,7 +16,7 @@ from qiskit import QuantumCircuit, AncillaRegister, ClassicalRegister
 from qiskit.extensions import UnitaryGate
 from qiskit.circuit import Parameter
 from qmatchatea.preprocessing import _preprocess_qk, qk_transpilation_params
-from qmatchatea.py_emulator import MPS, QcMps
+from qtealeaves.emulator import MPS
 from .qiskit_pauli import WeightedPauliOperator
 from .operators import generate_global_hopping, generate_global_onsite
 from .operators import from_operators_to_pauli_dict, generate_chemical_potential
@@ -379,9 +379,9 @@ def create_spin_excitation(qc, regs, state):
     mps = MPS.from_tensor_list(state)
     xx = np.array([[0, 1], [1, 0]])
     # Measure the qubits
-    up_idx = qc.find_bit(regs["q(0, 0)"]["u"] )
+    up_idx = qc.find_bit(regs["q(0, 0)"]["u"] )[0]
     _, _ = mps.apply_projective_operator(up_idx, 1)
-    down_idx = qc.find_bit(regs["q(0, 0)"]["d"] )
+    down_idx = qc.find_bit(regs["q(0, 0)"]["d"] )[0]
     _, _ = mps.apply_projective_operator(down_idx, 0)
 
     # Change the value of the spin
@@ -419,24 +419,24 @@ def create_charge_excitation(qc, regs, state):
     xx = np.array([[0, 1], [1, 0]])
     yy = np.array([[0, -1j], [1j, 0]])
     zz = np.array([[1, 0], [0, -1]])
-    # Measure the qubits
-    up_idx = qc.find_bit(regs["q(0, 0)"]["u"] )
-    _, _ = mps.apply_projective_operator(up_idx, 1)
 
-    mps.left_canonize(qc.num_qubits-1)
-    mps.right_canonize(0)
+    up_idx = qc.find_bit(regs["q(0, 0)"]["u"] )[0]
     # Add the new site for taking track of the odd
     # number of particles
     mps.add_site(up_idx+2)
 
+    # Measure the qubits
+    _, _ = mps.apply_projective_operator(up_idx, 1)
+
+    mps.left_canonize(qc.num_qubits-2)
+    mps.right_canonize(0)
+
     # Change the value of the charge
-    down_idx = qc.find_bit(regs["q(0, 0)"]["d"] )
-    down_idx = qc.find_bit(regs["q(0, 0)"]["d"] )
-    west_idx = qc.find_bit(regs["q(0, 0)"]["w"] )
-    south_idx = qc.find_bit(regs["q(0, 0)"]["s"] )
+    down_idx = qc.find_bit(regs["q(0, 0)"]["d"] )[0]
+    down_idx = qc.find_bit(regs["q(0, 0)"]["d"] )[0]
+    south_idx = qc.find_bit(regs["q(0, 0)"]["s"] )[0]
     mps.apply_one_site_operator(xx, up_idx)
     mps.apply_one_site_operator(zz, down_idx)
-    mps.apply_one_site_operator(zz, west_idx)
     mps.apply_one_site_operator(yy, south_idx)
 
     return mps.tensors

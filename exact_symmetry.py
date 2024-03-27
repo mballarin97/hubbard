@@ -11,7 +11,7 @@ from tqdm import tqdm
 from hubbard.hamiltonian_terms import hopping_hamiltonian
 import os
 
-shape = (2, 2)
+shape = (4, 2)
 # Interaction onsite constant
 onsite_const = 1
 # Hopping constant
@@ -178,7 +178,8 @@ ordering = np.argsort(eigenvalues)
 eigenvectors = eigenvectors[:, ordering]
 eigenvalues = eigenvalues[ ordering]
 
-save_dir = f"data/exact/{shape[0]}x{shape[1]}"
+#save_dir = f"data/exact/{shape[0]}x{shape[1]}"
+save_dir = f"{shape[0]}x{shape[1]}"
 if not os.path.isdir(save_dir):
     os.mkdir(save_dir)
 

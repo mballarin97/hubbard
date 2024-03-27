@@ -12,7 +12,7 @@ from qiskit import QuantumCircuit
 from .registers import HubbardRegister
 
 __all__ = ['hubbard_circuit', 'initialize_chessboard', 'initialize_superposition_chessboard',
-            'initialize_repulsive_rows']
+            'initialize_repulsive_rows', 'initialize_repulsive_chessboard']
 
 def hubbard_circuit(shape, ancilla_register, classical_registers, ordering=None, extra_leg=False):
     """
@@ -78,6 +78,42 @@ def initialize_chessboard(qc, regs, final_barrier=True):
     for reg in regs.values():
         if reg.is_even:
             qc.x(reg['u'])
+            qc.x(reg['d'])
+
+    if final_barrier:
+        qc.barrier()
+
+    return qc
+
+def initialize_repulsive_chessboard(qc, regs, final_barrier=True):
+    """
+    Initialize the hubbard state with the chessboard
+
+    .. code-block::
+
+        2 - 0 - 2 - 0
+        0 - 2 - 0 - 2
+        2 - 0 - 2 - 0
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        The Hubbard quantum circuit
+    regs : dict
+        The dictionary of the site registers
+    final_barrier : bool, optional
+        If True, put a barrier after the initialization.
+        Default to True
+
+    Returns
+    -------
+    QuantumCircuit
+        The quantum circuit with the initialization
+    """
+    for reg in regs.values():
+        if reg.is_even:
+            qc.x(reg['u'])
+        else:
             qc.x(reg['d'])
 
     if final_barrier:

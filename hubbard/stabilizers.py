@@ -8,7 +8,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-__all__ = ['apply_plaquette_stabilizers', 'apply_vertex_parity_stabilizer']
+__all__ = ['apply_plaquette_stabilizers', 'apply_vertex_parity_stabilizer', "plaquette_operator"]
 
 def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correct=True):
     """
@@ -175,3 +175,91 @@ def apply_vertex_parity_stabilizer(qc, regs, ancilla, cl_reg, site_idx, correct=
     qc.reset(ancilla)
 
     return qc
+
+
+def plaquette_operator(qc, regs, plaquette_idx):
+    """
+    Apply the stabilizer to a plaquette of the Hubbard defermoinised model,
+    recording the result of the projective measurement on a classical
+    register
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        hubbard quantum  circuit
+    regs : dict
+        Dictionary of the SiteRegisters
+    plaquette_idx : tuple of ints
+        XY position of the plaquette where you will apply the stabilizar.
+        Plaquettes are numbered from 0, left to right, from low to up
+
+    Return
+    ------
+    str
+        String of the plaquette operator
+
+    Example
+    -------
+    We report here an example of the plauqette numbering
+
+    .. code-block::
+
+        q-----q-----q-----q
+        | 0,1 | 1,1 | 2,1 |
+        q-----q-----q-----q
+        | 0,0 | 1,0 | 2,0 |
+        q-----q-----q-----q
+
+    """
+    # Keys are created as:
+    # - bottom left
+    # - upper left
+    # - bottom right
+    # - upper right
+    corner_order = ['bl', 'ul', 'br', 'ur']
+    # Relative rishons contains the rishons used in the stabilizer
+    # based on the corner of the site
+    relative_rishons = {
+        'bl' : [],
+        'ul' : ['s', 'e'],
+        'br' : ['n', 'w'],
+        'ur' : [],
+    }
+    # Site registers that forms the plaquette
+    involved_regs = [ f'q({plaquette_idx[0]+ii}, {plaquette_idx[1]+jj})'
+        for ii in range(2) for jj in range(2)]
+    involved_regs = dict(zip(corner_order, involved_regs))
+
+    # Apply hadamard to the ancilla
+    operator = list('I'*qc.num_qubits)
+    # Apply cx and cy
+    for corner in corner_order:
+        for rishon in relative_rishons[corner]:
+            qubit = regs[involved_regs[corner]][rishon]
+            qidx = qc.find_bit(qubit).index
+            if regs[involved_regs["bl"]].is_even:
+                if corner == 'br':
+                    operator[qidx] = "X"
+                elif corner == 'ul':
+                    operator[qidx] = "Y"
+            else:
+                if corner == 'br':
+                    operator[qidx] = "Y"
+                elif corner == 'ul':
+                    operator[qidx] = "X"
+
+    # Apply cz if qubits are available
+    if regs[involved_regs["bl"]].is_even:
+        for rishon in ('n', 'w'):
+            if rishon in regs[involved_regs['ul']]._keys:
+                qubit = regs[involved_regs['ul']][rishon]
+                qidx = qc.find_bit(qubit).index
+                operator[qidx] = "Z"
+    else:
+        for rishon in ('s', 'e'):
+            if rishon in regs[involved_regs['br']]._keys:
+                qubit = regs[involved_regs['br']][rishon]
+                qidx = qc.find_bit(qubit).index
+                operator[qidx] = "Z"
+
+    return "".join(operator[::-1])

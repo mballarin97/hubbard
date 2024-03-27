@@ -24,8 +24,8 @@ from qiskit import AncillaRegister, ClassicalRegister
 from qmatchatea import run_simulation
 import qmatchatea as qtea
 from qmatchatea.qk_utils import qk_transpilation_params
-from tn_py_frontend.observables import TNObservables, TNObsBondEntropy, TNState2File, TNObsLocal
-from tn_py_frontend.emulator import MPS
+from qtealeaves.observables import TNObservables, TNObsBondEntropy, TNState2File, TNObsLocal
+from qtealeaves.emulator import MPS
 
 import hubbard as hbb
 import hubbard.mps_observables as obs
@@ -45,9 +45,9 @@ if __name__ == '__main__':
     # Onsite constant, usually called U
     onsite_constant = params["onsite_constant"]
     # Number of timesteps
-    num_timesteps = 500
+    num_timesteps = 500*10
     # Maximum bond dimension of the simulation
-    max_bond_dim = 1000
+    max_bond_dim = 1024
     # Number of timesteps for a fixed alpha
     num_timesteps_before_meas = params["num_timesteps_before_measurement"]
     # Number of trotterization steps for the single timestep
@@ -56,16 +56,16 @@ if __name__ == '__main__':
     dt = params["dt"]
     # If True, compute correlators
     compute_correlators = True
-    state_idx = 0
-    excitation = None
+    state_idx = 24
+    excitation = None#"spin"
 
     # Parameters dictionary for saving
     params['chi'] = max_bond_dim
     params['num_timesteps'] = num_timesteps
-    params.pop("num_timesteps_for_alpha")
-    params.pop("adiabatic_circ_generation_time")
-    params.pop("adiabatic_step_num_2qubit_gates")
-    conv_params = qtea.QCConvergenceParameters(max_bond_dimension=max_bond_dim, singval_mode='C')
+    #params.pop("num_timesteps_for_alpha")
+    #params.pop("adiabatic_circ_generation_time")
+    #params.pop("adiabatic_step_num_2qubit_gates")
+    conv_params = qtea.QCConvergenceParameters(max_bond_dimension=max_bond_dim, singval_mode='C', cut_ratio=1e-8)
     backend = qtea.QCBackend(backend="PY", device="gpu")
 
     # Vertexes definition
@@ -95,8 +95,7 @@ if __name__ == '__main__':
 
     # ============= Initialize Hubbard circuit =============
     extra_leg = True if excitation == "charge" else False
-    regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas, params["ordering"], extra_leg )
-
+    regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas, params["ordering"], extra_leg=extra_leg )
     tensor_list = qtea.read_mps(f"data/{state_idx}/mps_state.txt")
 
     if excitation == "charge":
@@ -105,6 +104,7 @@ if __name__ == '__main__':
         tensor_list = hbb.create_spin_excitation(qc, regs, tensor_list)
 
     initial_state = MPS.from_tensor_list(tensor_list, conv_params)
+    initial_state.iso_towards(0)
     qregs_names = [qreg.name for qreg in qc.qregs]
 
     # ============= Prepare observables =============
@@ -145,8 +145,8 @@ if __name__ == '__main__':
     start = time.time()
     for timestep in range(num_timesteps):
         # ===== Inner loop, for each alpha evolve for 10 timesteps =====
-        if idx > 0:
-            qc = deepcopy(evolution_circ)
+        #if idx > 0:
+        qc = deepcopy(evolution_circ)
 
         # Simulate the circuit
         qcio = qtea.QCIO(inPATH='temp/in/', outPATH='temp/out/', initial_state=initial_state)
@@ -158,14 +158,14 @@ if __name__ == '__main__':
                             operators=qc_ops,
                             transpilation_parameters=qk_transpilation_params(False, tensor_compiler=False)
                             )
-        initial_state = MPS.from_tensor_list(res.mps, conv_params)
+        initial_state = MPS.from_tensor_list(res.tens_net, conv_params)
 
 
         # Extract observables for each alpha (NOT EACH TIMESTEP)
         for ii, name in enumerate(ud_names):
             ud_exps[idx, ii] = np.real(res.observables[name])
         z_on_qubits[idx, :] = res.observables['z']
-        entanglement[idx, :] = np.array(list(res.entanglement.values()))*np.log2(np.e)
+        #entanglement[idx, :] = np.array(list(res.entanglement.values()))*np.log2(np.e)
         if compute_correlators:
             for ii, name in enumerate(corr_names):
                 correlators[idx, ii] = np.real(res.observables[name])

@@ -45,11 +45,11 @@ if __name__ == '__main__':
     # Onsite constant, usually called U
     onsite_constant = params["onsite_constant"]
     # Number of steps in the evolution
-    alpha_steps = 500
+    alpha_steps = 100
     # Maximum bond dimension of the simulation
     max_bond_dim = 1000
     # Number of evolution timesteps after the adiabatic process was over
-    final_time = 100
+    final_time = 10
     # Number of timesteps for a fixed alpha
     num_timesteps_for_alpha = params["num_timesteps_for_alpha"]
     # Number of trotterization steps for the single timestep

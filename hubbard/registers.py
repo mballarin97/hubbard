@@ -16,6 +16,7 @@ EVEN_SITE_LIST = ['u', 'd', 'w', 's', 'e', 'n']
 ODD_SITE_LIST = ['d', 'u', 's', 'w', 'n', 'e']
 
 __all__ = ['HubbardRegister']
+
 class SiteRegister():
     """
     Class to handle the site names for the Hubbard defermionazed model.
@@ -147,6 +148,8 @@ class HubbardRegister():
     def __init__(self, shape, ordering=None, extra_leg=False):
 
         vert_links = [ii for ii in range(shape[0]*(shape[1]-1))]
+        if extra_leg:
+            vert_links = [-1] + vert_links
         horiz_links = [ii for ii in range(shape[1]*(shape[0]-1))]
         links_qr = {}
         for link_idx in vert_links:
@@ -176,6 +179,8 @@ class HubbardRegister():
 
                 if ypos == xpos == 0:
                     extra_leg_temp = extra_leg
+                    if extra_leg:
+                        link_regs['s'] = links_qr[f'lv{-1}']
                 else:
                     extra_leg_temp = False
                 site = SiteRegister(xpos, ypos, shape, link_regs, extra_leg_temp)

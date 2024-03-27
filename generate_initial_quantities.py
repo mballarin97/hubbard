@@ -8,7 +8,7 @@ from qiskit import AncillaRegister, ClassicalRegister, QuantumCircuit
 from qmatchatea import run_simulation, QCConvergenceParameters, write_mps
 from qmatchatea.qk_utils import qk_transpilation_params
 from qmatchatea.preprocessing import _preprocess_qk
-import tn_py_frontend.observables as obs
+import qtealeaves.observables as obs
 
 dir = "initial_states"
 shape = (4, 2)
@@ -17,15 +17,29 @@ onsite_constant = 1
 dt = 0.01
 num_timesteps_for_alpha = 10
 num_timesteps_before_measurement = 10
+extra_leg = False
+
 # 4x4 ordering
-#ordering = [24, 12, 25, 1, 13, 26, 14, 27, 3, 31, 17, 2, 30, 16, 5, 29,
-#            15, 0, 28, 4, 32, 18, 9, 33, 19, 6, 34, 20, 7, 35, 11, 39,
-#             23, 10, 38, 22, 37, 21, 8, 36]
+if shape == (4, 4):
+    ordering = [24, 12, 25, 1, 13, 26, 14, 27, 3, 31, 17, 2, 30, 16, 5, 29,
+                15, 0, 28, 4, 32, 18, 9, 33, 19, 6, 34, 20, 7, 35, 11, 39,
+                23, 10, 38, 22, 37, 21, 8, 36]
+    if extra_leg:
+        # 4x2 ordering with extra rishon
+        ordering = [oo+1 for oo in ordering]
+        ordering = [0] + ordering
+elif shape == (4, 2):
+    # 4x2 ordering
+    ordering = [ 14, 0, 10, 4, 11, 1, 7, 15, 8, 16, 2, 5, 12, 6, 13, 3, 9, 17
 
-# 4x2 ordering
-ordering = [ 14, 0, 10, 4, 11, 1, 7, 15, 8, 16, 2, 5, 12, 6, 13, 3, 9, 17
+    ]
 
-]
+    if extra_leg:
+        # 4x2 ordering with extra rishon
+        ordering = [oo+1 for oo in ordering]
+        ordering = ordering[:3] + [0] + ordering[3:]
+
+
 params = {
     'shape' : shape,
     'ordering' : ordering,
@@ -51,8 +65,9 @@ if __name__ == '__main__':
     cancillas = [ClassicalRegister(1, f'ca{ii}') for ii in range(len(plaquettes)+len(vertexes)+1)]
 
     # =================== Initialize circuit ===================
-    regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas, ordering=ordering )
-    qc = hbb.initialize_repulsive_rows(qc, regs, qancilla, cancillas[-1], shape, filling="h")
+    regs, qc = hbb.hubbard_circuit(shape, qancilla, cancillas, ordering=ordering, extra_leg=extra_leg )
+    #qc = hbb.initialize_repulsive_rows(qc, regs, qancilla, cancillas[-1], shape, filling="h")
+    qc = hbb.initialize_repulsive_chessboard(qc, regs)
 
     for ii, pp in enumerate(plaquettes):
         qc = hbb.apply_plaquette_stabilizers(qc, regs, qancilla[0], cancillas[ii], pp )
@@ -68,32 +83,33 @@ if __name__ == '__main__':
     res = run_simulation(qc, convergence_parameters= conv_params, observables=obsv)
     params['mps_simulation_time'] = time.time()-start
     statevect = res.measure_probabilities[0]
-    max_bond_dim = np.array([ tens.shape for tens in res.mps]).flatten().max()
+    max_bond_dim = np.array([ tens.shape for tens in res.tens_net]).flatten().max()
     params['initial_max_bond_dim'] = int(max_bond_dim)
     params['num_nonzero_states'] = len(statevect)
 
     # =================== Save MPS state ===================
-    write_mps(os.path.join(dir, "initial_repulsive.txt"), res.mps)
-    with open(os.path.join(dir, "initial_repulsive_str.txt"), 'w' ) as fh:
-        state_str = hbb.lattice_str(qc, statevect, regs, shape)
-        fh.write(state_str)
+    write_mps(os.path.join(dir, "initial_repulsive.txt"), res.tens_net)
+#    with open(os.path.join(dir, "initial_repulsive_str.txt"), 'w' ) as fh:
+#        state_str = hbb.lattice_str(qc, statevect, regs, shape)
+#        fh.write(state_str)
 
     # =================== Generate adiabatic evolution circuit ===================
-    start = time.time()
-    adiabatic_instruction = hbb.superposition_adiabatic_operation(qc, regs, shape,
-                hopping_constant, onsite_constant,
-                dt*num_timesteps_for_alpha, num_timesteps_for_alpha)
-    qc1 = QuantumCircuit(*qc.qregs, *qc.cregs)
-    qc1.append(adiabatic_instruction, range(qc.num_qubits))
-    adiabatic_circ = _preprocess_qk(qc1, generic_params)
-    params['adiabatic_step_num_2qubit_gates'] = int(adiabatic_circ.num_nonlocal_gates())
-    adiabatic_circ = _preprocess_qk(qc1, linear_params)
-    params['adiabatic_circ_generation_time'] = time.time()-start
-    params['adiabatic_step_num_2qubit_gates_1d'] = int(adiabatic_circ.num_nonlocal_gates())
+    if False:
+        start = time.time()
+        adiabatic_instruction = hbb.adiabatic_operation(qc, regs, shape, #superposition_adiabatic_operation
+                    hopping_constant, onsite_constant, onsite_constant,
+                    dt*num_timesteps_for_alpha, num_timesteps_for_alpha)
+        qc1 = QuantumCircuit(*qc.qregs, *qc.cregs)
+        qc1.append(adiabatic_instruction, range(qc.num_qubits))
+        adiabatic_circ = _preprocess_qk(qc1, generic_params)
+        params['adiabatic_step_num_2qubit_gates'] = int(adiabatic_circ.num_nonlocal_gates())
+        adiabatic_circ = _preprocess_qk(qc1, linear_params)
+        params['adiabatic_circ_generation_time'] = time.time()-start
+        params['adiabatic_step_num_2qubit_gates_1d'] = int(adiabatic_circ.num_nonlocal_gates())
 
-    # =================== Save adiabatic evolution circuit ===================
-    with open(os.path.join(dir, "repulsive_adiabatic.pkl"), "wb") as fh:
-        pickle.dump(adiabatic_circ, fh)
+        # =================== Save adiabatic evolution circuit ===================
+        with open(os.path.join(dir, "repulsive_adiabatic.pkl"), "wb") as fh:
+            pickle.dump(adiabatic_circ, fh)
 
 
     # =================== Generate evolution circuit ===================

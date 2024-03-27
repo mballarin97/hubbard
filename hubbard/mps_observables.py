@@ -8,7 +8,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import tn_py_frontend.observables as obs
+import qtealeaves.observables as obs
 
 def map_qiskit_idx(num_qubs, idx):
     return -(idx - num_qubs + 1)
