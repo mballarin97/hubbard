@@ -1,0 +1,4 @@
+qmatchatea==0.5.2
+qiskit_aqua
+tqdm
+qplotting
