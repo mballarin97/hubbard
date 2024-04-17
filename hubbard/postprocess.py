@@ -43,7 +43,7 @@ def reorder_vector(params, extra_leg = False):
             new_ordering.append(2*oo-num_rishons+1)
     return np.argsort(new_ordering)
 
-def postprocess_data(idx, mps=False):
+def postprocess_data(idx, mps=False, correlators=False):
     """
     Postprocess the data
 
@@ -60,8 +60,6 @@ def postprocess_data(idx, mps=False):
 
     # Local expectation value of z
     z_on_qubits = np.loadtxt(res_dir+"z_on_qubits.txt")
-    # All the correlators
-    correlators = np.loadtxt(res_dir+"correlators.txt")
     # Entanglement along the chain
     entanglement = np.loadtxt(res_dir+"entanglement.txt")
     # Cumulative singular values cut during the simulation
@@ -88,7 +86,10 @@ def postprocess_data(idx, mps=False):
         "mps_state" : mps_state
     }
     results.update( postprocess_ud(params, z_on_qubits, ud) )
-    results.update( postprocess_correlators(params, results, correlators) )
+    if correlators:
+        # All the correlators
+        correlators = np.loadtxt(res_dir+"correlators.txt")
+        results.update( postprocess_correlators(params, results, correlators) )
 
     return results
 
@@ -115,10 +116,13 @@ def postprocess_ud(params, z_on_qubits, ud):
     # - First, all the vertical rishons are described
     # - Second, all the horizontal rishons are described
     # - Third, all the sites are described. In this case the outer loop is over the y coordinate
-    extra_leg = True if params["excitation"] == "charge" else False
+    excitation = params.get("excitation", None)
+    extra_leg = True if excitation == "charge" else False
     num_rishons = (params["shape"][0]-1)*params["shape"][1] + params["shape"][0]*(params["shape"][1]-1) + int(extra_leg)
     num_sites = params["shape"][0]*params["shape"][1]
 
+    if len(z_on_qubits.shape) == 1:
+        z_on_qubits = z_on_qubits.reshape(1, -1)
     reordered_z = z_on_qubits[:, reorder_vector(params, extra_leg)]
     # Map the measured Z into the occupancy number, n=(1-z)/2
     single_occupancy = (1-reordered_z)/2

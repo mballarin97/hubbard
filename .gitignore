@@ -130,3 +130,4 @@ dmypy.json
 
 # data and plots
 data/
+ad-peps/*

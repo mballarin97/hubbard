@@ -15,6 +15,7 @@ In this repository, we report all the code for reproducing the result of the dig
 - [Measurable observables](#observables)
 - [Plotting the results](#plot)
 - [Requirements](#requirements)
+- [Ground state search](#gss)
 
 <div id='model'/>
 
@@ -198,3 +199,12 @@ The version of qiskit-aqua used for the library is not working by default.
 When installed with pip, you need to modify the file
 `/PATH/site-packages/qiskit/providers/__init__.py` and add the line
 `from qiskit.providers.backend import Backend as BaseBackend`.
+
+<div id='gss'/>
+
+### Ground state search
+
+It is possible also to perform the ground state searches simulations detailed in the first half of the paper.
+To do so, you will need the additional dependency [`ed_lgt`](https://github.com/gcataldi96/ed-lgt).
+Afterwards, just refer to the file `ttn_ground_state_search.py` to see how the operators are prepared
+and how to setup the simulation.

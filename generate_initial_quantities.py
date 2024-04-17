@@ -29,14 +29,14 @@ from qmatchatea.qk_utils import qk_transpilation_params
 from qmatchatea.preprocessing import _preprocess_qk
 import qtealeaves.observables as obs
 
-dir = "initial_states"
+dir = "initial_states_charge"
 shape = (4, 2)
 hopping_constant = 0.1
 onsite_constant = 1
 dt = 0.01
 num_timesteps_for_alpha = 10
 num_timesteps_before_measurement = 10
-extra_leg = False
+extra_leg = True
 generate_adiabatic_operator = False
 
 # 4x4 ordering

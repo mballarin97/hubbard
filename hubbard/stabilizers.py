@@ -8,7 +8,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-__all__ = ['apply_plaquette_stabilizers', 'apply_vertex_parity_stabilizer', "plaquette_operator"]
+__all__ = ['apply_plaquette_stabilizers', 'apply_vertex_parity_stabilizer', "plaquette_operator", "vertex_operator"]
 
 def apply_plaquette_stabilizers(qc, regs, ancilla, cl_reg, plaquette_idx, correct=True):
     """
@@ -261,5 +261,40 @@ def plaquette_operator(qc, regs, plaquette_idx):
                 qubit = regs[involved_regs['br']][rishon]
                 qidx = qc.find_bit(qubit).index
                 operator[qidx] = "Z"
+
+    return "".join(operator[::-1])
+
+def vertex_operator(qc, regs, site_idx):
+    """
+    Generate the stabilizer operator of the Hubbard defermoinised model,
+    recording the result of the projective measurement on a classical
+    register
+
+    Parameters
+    ----------
+    qc : QuantumCircuit
+        hubbard quantum  circuit
+    regs : dict
+        Dictionary of the SiteRegisters
+    site_idx : tuple of ints
+        XY position of the vertex_idx where you will apply the stabilizar.
+
+    Return
+    ------
+    str
+        String of the plaquette operator
+
+    """
+    site_reg = regs[ f'q({site_idx[0]}, {site_idx[1]})' ]
+    names = ["u", "d", "e", "w", "n", "s"]
+
+    # Apply hadamard to the ancilla
+    operator = list('I'*qc.num_qubits)
+    # Apply zz
+    for name in names:
+        if name in site_reg._keys:
+            qubit = site_reg[name]
+            qidx = qc.find_bit(qubit).index
+            operator[qidx] = "Z"
 
     return "".join(operator[::-1])

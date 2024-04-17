@@ -32,8 +32,8 @@ os.environ["NUMEXPR_NUM_THREADS"] = "8"
 os.environ["OMP_NUM_THREADS"] = "8"
 
 import numpy as np
-import cupy as cp
-from qiskit import AncillaRegister, ClassicalRegister
+#import cupy as cp
+from qiskit import AncillaRegister, ClassicalRegister, QuantumCircuit
 from qmatchatea import run_simulation
 import qmatchatea as qtea
 from qmatchatea.qk_utils import qk_transpilation_params
@@ -69,7 +69,7 @@ def init_parser():
 if __name__ == '__main__':
 
     # ============= Initialize parameters of the simulation =============
-    preproc_dir = "initial_states"
+    preproc_dir = "initial_states_charge"
     with open(os.path.join(preproc_dir, "params.json"), 'rb') as fh:
         params = json.load(fh)
 
@@ -152,9 +152,14 @@ if __name__ == '__main__':
     timing = np.zeros(num_timesteps )
     # Initialize pauli matrices operators
     qc_ops = qtea.QCOperators()
-    qc_ops.ops['z'] = cp.array([[1, 0], [0, -1]])
-    qc_ops.ops['y'] = cp.array([[0, -1j], [1j, 0]])
-    qc_ops.ops['x'] = cp.array([[0, 1], [1, 0]])
+    if args.device == "gpu":
+        qc_ops.ops['z'] = cp.array([[1, 0], [0, -1]])
+        qc_ops.ops['y'] = cp.array([[0, -1j], [1j, 0]])
+        qc_ops.ops['x'] = cp.array([[0, 1], [1, 0]])
+    else:
+        qc_ops.ops['z'] = np.array([[1, 0], [0, -1]])
+        qc_ops.ops['y'] = np.array([[0, -1j], [1j, 0]])
+        qc_ops.ops['x'] = np.array([[0, 1], [1, 0]])
     # Initialize observables
     qc_obs = TNObservables()
     # Local observables, Z on each qubit
@@ -199,7 +204,6 @@ if __name__ == '__main__':
         initial_state = MPS.from_tensor_list(res.tens_net, conv_params)
 
 
-        # Extract observables for each alpha (NOT EACH TIMESTEP)
         for ii, name in enumerate(ud_names):
             ud_exps[idx, ii] = np.real(res.observables[name])
         z_on_qubits[idx, :] = res.observables['z']
