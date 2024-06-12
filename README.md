@@ -1,7 +1,7 @@
-# Scalable digital quantum simulation of lattice fermion theories with local encoding
+# Digital quantum simulation of lattice fermion theories with local encoding
 
 Repository for the simulation of the Defermionized Hubbard model reported in the paper
-[Scalable digital quantum simulation of lattice fermion theories with local encoding](https://arxiv.org/abs/2310.15091).
+[Digital quantum simulation of lattice fermion theories with local encoding](https://arxiv.org/abs/2310.15091).
 In this repository, we report all the code for reproducing the result of the digital computations.
 
 
